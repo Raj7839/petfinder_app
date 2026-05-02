@@ -3,7 +3,7 @@ import type { FoundAnimalReport, MissingAnimalReport, MatchResult, AppNotificati
 import { runMatchingForFoundReport, runMatchingForMissingReport, runFullRematching } from '../lib/matchingEngine';
 import { supabase } from '../lib/supabaseClient';
 
-const REMATCH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const REMATCH_INTERVAL_MS = 30 * 1000; // 30 seconds for active testing sync
 
 interface AppState {
   foundReports: FoundAnimalReport[];
@@ -155,42 +155,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [state.foundReports, state.missingReports, state.matches, state.notifications]);
 
-  // Load initial state from Supabase
-  useEffect(() => {
-    (async () => {
-      try {
-        const [
-          { data: missingReports },
-          { data: foundReports },
-          { data: matches },
-          { data: notifications }
-        ] = await Promise.all([
-          supabase.from('missing_reports').select('*').order('createdAt', { ascending: false }),
-          supabase.from('found_reports').select('*').order('createdAt', { ascending: false }),
-          supabase.from('matches').select('*').order('timestamp', { ascending: false }),
-          supabase.from('notifications').select('*').order('timestamp', { ascending: false }),
-        ]);
+  const fetchLatestData = useCallback(async () => {
+    try {
+      const [
+        { data: missingReports },
+        { data: foundReports },
+        { data: matches },
+        { data: notifications }
+      ] = await Promise.all([
+        supabase.from('missing_reports').select('*').order('createdAt', { ascending: false }),
+        supabase.from('found_reports').select('*').order('createdAt', { ascending: false }),
+        supabase.from('matches').select('*').order('timestamp', { ascending: false }),
+        supabase.from('notifications').select('*').order('timestamp', { ascending: false }),
+      ]);
 
-        dispatch({
-          type: 'MERGE_STATE',
-          payload: {
-            missingReports: missingReports || [],
-            foundReports: foundReports || [],
-            matches: matches || [],
-            notifications: notifications || [],
-          }
-        });
-        console.log('Synced with Supabase: ', { missing: missingReports?.length, found: foundReports?.length });
-      } catch (err) {
-        console.error('Failed to load state from Supabase', err);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
+      dispatch({
+        type: 'MERGE_STATE',
+        payload: {
+          missingReports: missingReports || [],
+          foundReports: foundReports || [],
+          matches: matches || [],
+          notifications: notifications || [],
+        }
+      });
+    } catch (err) {
+      console.error('Background sync failed', err);
+    }
   }, []);
 
   const runRematching = useCallback(async () => {
     if (isLoading) return;
+    
+    // First, sync latest data to ensure we have other devices' reports
+    await fetchLatestData();
+
     const { matches: newMatches, notifications: newNotifs } = runFullRematching(
       state.foundReports,
       state.missingReports,
@@ -208,10 +206,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [state.foundReports, state.missingReports, state.matches, isLoading]);
 
   useEffect(() => {
-    if (isLoading) return;
+    // Initial fetch
+    fetchLatestData().finally(() => setIsLoading(false));
+    
     const timer = setInterval(runRematching, REMATCH_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [runRematching, isLoading]);
+  }, [runRematching, fetchLatestData]);
 
   const addFoundReport = useCallback(async (report: FoundAnimalReport) => {
     dispatch({ type: 'ADD_FOUND_REPORT', payload: report });

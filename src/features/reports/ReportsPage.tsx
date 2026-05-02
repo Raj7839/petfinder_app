@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import { Search, MapPin, Filter, Eye, SearchCheck, ArrowRight, Grid, List as ListIcon, Calendar } from 'lucide-react';
+import { Search, MapPin, Filter, Eye, SearchCheck, ArrowRight, Grid, List as ListIcon, Calendar, X, Phone, User, Info, Clock } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApp } from '../../store/AppContext';
 import { useLanguage } from '../../i18n';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { BrandIcon } from '../../components/ui/BrandIcon';
 import { formatDate } from '../../utils/helpers';
 import './Reports.css';
 
@@ -16,6 +17,7 @@ export function ReportsPage() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedReport, setSelectedReport] = useState<any>(null);
   
   const typeFilter = searchParams.get('type') as 'found' | 'missing' | null;
   const activeFilter = typeFilter || 'all';
@@ -128,9 +130,17 @@ export function ReportsPage() {
               className={`report-gallery-card ${report.type}`}
               padding="none"
               hoverable
+              onClick={() => setSelectedReport(report)}
             >
               <div className="report-card-image">
-                <img src={report.photos[0]} alt="" loading="lazy" />
+                {report.photos && report.photos[0] ? (
+                  <img src={report.photos[0]} alt="" loading="lazy" />
+                ) : (
+                  <div className={`report-placeholder ${report.type}`}>
+                    <BrandIcon size={40} />
+                    <span>No Photo Available</span>
+                  </div>
+                )}
                 <div className="report-type-badge">
                   <Badge variant={report.type === 'found' ? 'blue' : 'amber'}>
                     {report.type === 'found' ? 'Found' : 'Missing'}
@@ -160,12 +170,12 @@ export function ReportsPage() {
                 </div>
 
                 <div className="report-card-footer">
-                  <Link to={`/map?id=${report.id}`}>
+                  <Link to={`/map?id=${report.id}`} onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="sm" icon={<MapPin size={14} />}>
                       Map
                     </Button>
                   </Link>
-                  <Button variant="secondary" size="sm" icon={<ArrowRight size={14} />}>
+                  <Button variant="secondary" size="sm" icon={<ArrowRight size={14} />} onClick={(e) => { e.stopPropagation(); setSelectedReport(report); }}>
                     Details
                   </Button>
                 </div>
@@ -174,6 +184,100 @@ export function ReportsPage() {
           ))
         )}
       </div>
+
+      {/* Report Detail Modal */}
+      {selectedReport && (
+        <div className="report-modal-overlay" onClick={() => setSelectedReport(null)}>
+          <div className="report-modal animate-scale-in" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setSelectedReport(null)}><X size={24} /></button>
+            
+            <div className="modal-layout">
+              <div className="modal-image-side">
+                {selectedReport.photos && selectedReport.photos[0] ? (
+                  <img src={selectedReport.photos[0]} alt="" />
+                ) : (
+                  <div className={`modal-placeholder ${selectedReport.type}`}>
+                    <BrandIcon size={64} />
+                  </div>
+                )}
+              </div>
+              
+              <div className="modal-content-side">
+                <div className="modal-header-info">
+                  <Badge variant={selectedReport.type === 'found' ? 'blue' : 'amber'} size="md">
+                    {selectedReport.type === 'found' ? 'Found Animal' : 'Missing Pet'}
+                  </Badge>
+                  <h1>
+                    {selectedReport.type === 'found' 
+                      ? selectedReport.details.type 
+                      : selectedReport.identity.name}
+                  </h1>
+                  <p className="modal-subtitle">
+                    {selectedReport.type === 'found'
+                      ? `${selectedReport.details.breed} • ${selectedReport.details.primaryColor}`
+                      : `${selectedReport.identity.breed} • ${selectedReport.identity.primaryColor}`}
+                  </p>
+                </div>
+
+                <div className="modal-info-grid">
+                  <div className="modal-info-item">
+                    <MapPin size={18} />
+                    <div>
+                      <strong>Location</strong>
+                      <p>{selectedReport.type === 'found' ? selectedReport.location.address : selectedReport.lastSeen.location.address}</p>
+                    </div>
+                  </div>
+                  <div className="modal-info-item">
+                    <Clock size={18} />
+                    <div>
+                      <strong>Reported On</strong>
+                      <p>{formatDate(selectedReport.createdAt)}</p>
+                    </div>
+                  </div>
+                  {selectedReport.type === 'missing' && selectedReport.identity.gender && (
+                    <div className="modal-info-item">
+                      <User size={18} />
+                      <div>
+                        <strong>Gender</strong>
+                        <p>{selectedReport.identity.gender}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="modal-info-item">
+                    <Info size={18} />
+                    <div>
+                      <strong>Description</strong>
+                      <p>{selectedReport.type === 'found' ? selectedReport.details.behavior : selectedReport.identity.distinguishingFeatures || 'No additional details provided.'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-contact-section">
+                  <h3>Contact Information</h3>
+                  <div className="modal-contact-card">
+                    <div className="contact-avatar"><User size={20} /></div>
+                    <div className="contact-info">
+                      <strong>Reported by {selectedReport.userId === 'admin' ? 'FindMyFur Team' : 'Community Member'}</strong>
+                      <p>Guardian for this case</p>
+                    </div>
+                    <Button variant="primary" size="sm" icon={<Phone size={14} />}>
+                      Contact
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <Link to={`/map?id=${selectedReport.id}`}>
+                    <Button variant="secondary" className="w-full" icon={<MapPin size={16} />}>
+                      View on Live Map
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,343 @@
+/* ============================================
+   CameraCapture — Full-screen camera overlay
+   ============================================ */
+
+.camera-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-video-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+/* Viewfinder overlay corners */
+.camera-viewfinder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(80vw, 320px);
+  height: min(80vw, 320px);
+  pointer-events: none;
+}
+
+.viewfinder-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-color: rgba(59, 130, 246, 0.8);
+  border-style: solid;
+  border-width: 0;
+}
+
+.viewfinder-corner.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 12px; }
+.viewfinder-corner.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 12px; }
+.viewfinder-corner.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 12px; }
+.viewfinder-corner.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 12px; }
+
+/* Scanning line animation */
+.viewfinder-scanline {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.6), rgba(139, 92, 246, 0.6), transparent);
+  animation: scanline 2.5s ease-in-out infinite;
+  border-radius: 1px;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+@keyframes scanline {
+  0%, 100% { top: 8px; opacity: 0.3; }
+  50% { top: calc(100% - 10px); opacity: 1; }
+}
+
+/* Top bar */
+.camera-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+  z-index: 10;
+}
+
+.camera-close-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 200ms ease;
+}
+
+.camera-close-btn:hover { background: rgba(255,255,255,0.25); }
+
+.camera-title {
+  color: white;
+  font-family: var(--font-heading, 'Outfit', sans-serif);
+  font-size: 16px;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.camera-switch-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 200ms ease, transform 300ms ease;
+}
+
+.camera-switch-btn:hover { background: rgba(255,255,255,0.25); }
+.camera-switch-btn:active { transform: rotate(180deg); }
+
+/* Bottom controls */
+.camera-bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 20px 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+  z-index: 10;
+}
+
+/* GPS indicator */
+.camera-gps-indicator {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+.camera-gps-indicator.gps-active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.camera-gps-indicator.gps-pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.gps-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: gpsPulse 1.5s ease-in-out infinite;
+}
+
+.gps-active .gps-dot { background: #34d399; }
+.gps-pending .gps-dot { background: #fbbf24; }
+
+@keyframes gpsPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+/* Shutter button */
+.camera-shutter {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: white;
+  border: 4px solid rgba(255,255,255,0.4);
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+}
+
+.camera-shutter::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: white;
+  transition: background 150ms ease;
+}
+
+.camera-shutter:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.4);
+}
+
+.camera-shutter:active {
+  transform: scale(0.92);
+}
+
+.camera-shutter:active::before {
+  background: #3B82F6;
+}
+
+/* Flash effect */
+.camera-flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  z-index: 20;
+  animation: flashAnim 400ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes flashAnim {
+  0% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+/* Preview buttons */
+.camera-preview-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.camera-preview-btn {
+  padding: 12px 28px;
+  border-radius: 12px;
+  border: none;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.camera-preview-btn:hover { transform: translateY(-1px); }
+.camera-preview-btn:active { transform: translateY(0); }
+
+.camera-btn-retake {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  backdrop-filter: blur(8px);
+}
+
+.camera-btn-retake:hover { background: rgba(255,255,255,0.25); }
+
+.camera-btn-use {
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  color: white;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.camera-btn-use:hover {
+  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.5);
+}
+
+/* Loading / error state */
+.camera-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: rgba(255,255,255,0.7);
+  font-family: var(--font-body, 'Inter', sans-serif);
+}
+
+.camera-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: #3B82F6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.camera-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #f87171;
+  text-align: center;
+  padding: 20px;
+  font-family: var(--font-body, 'Inter', sans-serif);
+}
+
+.camera-error p {
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+  max-width: 280px;
+}
+
+.camera-error-retry {
+  margin-top: 8px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 200ms ease;
+}
+
+.camera-error-retry:hover { background: rgba(59, 130, 246, 0.35); }

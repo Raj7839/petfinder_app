@@ -12,7 +12,7 @@ import './MapView.css';
 export function MapViewPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
-  const { state } = useApp();
+  const { state, isLoading } = useApp();
   const [searchParams] = useSearchParams();
   const initialFilter = searchParams.get('type') as 'found' | 'missing' | null;
   const [filter, setFilter] = useState<'all' | 'found' | 'missing'>(initialFilter || 'all');
@@ -41,6 +41,27 @@ export function MapViewPage() {
       mapInstance.current = null;
     };
   }, []);
+
+  // Handle URL ID parameter to focus map
+  useEffect(() => {
+    if (!mapInstance.current || isLoading) return;
+    const id = searchParams.get('id');
+    if (!id) return;
+
+    const found = state.foundReports.find(r => r.id === id);
+    const missing = state.missingReports.find(r => r.id === id);
+    const report = found || missing;
+
+    if (report) {
+      const lat = found ? found.location.lat : missing?.lastSeen.location.lat;
+      const lng = found ? found.location.lng : missing?.lastSeen.location.lng;
+      if (lat && lng) {
+        mapInstance.current.setView([lat, lng], 14, { animate: true });
+        // Set filter to match report type
+        setFilter(found ? 'found' : 'missing');
+      }
+    }
+  }, [searchParams, state.foundReports, state.missingReports, isLoading]);
 
   useEffect(() => {
     if (!mapInstance.current) return;

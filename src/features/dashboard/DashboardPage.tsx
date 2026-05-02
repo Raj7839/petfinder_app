@@ -43,8 +43,8 @@ export function DashboardPage() {
   }, [stats.found, stats.missing, stats.matches, stats.resolved]);
 
   const recentActivity = [
-    ...state.foundReports.map(r => ({ type: 'found' as const, id: r.id, date: r.createdAt, status: r.status, location: r.location.address })),
-    ...state.missingReports.map(r => ({ type: 'missing' as const, id: r.id, date: r.createdAt, status: r.status, name: r.identity.name, location: r.lastSeen.location.address })),
+    ...state.foundReports.map(r => ({ type: 'found' as const, id: r.id, date: r.createdAt, status: r.status, location: r.location.address, photo: r.photos[0] })),
+    ...state.missingReports.map(r => ({ type: 'missing' as const, id: r.id, date: r.createdAt, status: r.status, name: r.identity.name, location: r.lastSeen.location.address, photo: r.photos[0] })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
 
   return (
@@ -130,7 +130,7 @@ export function DashboardPage() {
         <Card className="dashboard-activity" padding="none">
           <div className="activity-header">
             <h2>{t.dashboard.recentActivity}</h2>
-            <Link to="/matches" className="activity-view-all">{t.dashboard.viewAll} <ArrowRight size={14} /></Link>
+            <Link to="/map" className="activity-view-all">{t.dashboard.viewMap} <ArrowRight size={14} /></Link>
           </div>
           <div className="activity-list">
             {recentActivity.length === 0 && (
@@ -139,19 +139,27 @@ export function DashboardPage() {
               </div>
             )}
             {recentActivity.map((item, i) => (
-              <div key={item.id} className="activity-item" style={{ animationDelay: `${i * 60}ms` }}>
-                <div className={`activity-dot ${item.type === 'found' ? 'activity-dot-blue' : 'activity-dot-amber'}`} />
-                <div className="activity-content">
-                  <p className="activity-text">
-                    {item.type === 'found' ? t.dashboard.foundPersonReported : `${t.dashboard.missingLabel} ${(item as any).name || t.common.unknown}`}
-                    {item.location && <span className="activity-location"><MapPin size={12} /> {item.location}</span>}
-                  </p>
-                  <div className="activity-meta">
-                    <span className="activity-time">{formatDate(item.date)}</span>
-                    <StatusBadge status={item.status} />
+              <Link 
+                to={`/map?id=${item.id}`} 
+                key={item.id} 
+                className="activity-item-link"
+              >
+                <div className="activity-item" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div className="activity-photo">
+                    {item.photo ? <img src={item.photo} alt="" /> : <div className={`activity-photo-placeholder ${item.type === 'found' ? 'blue' : 'amber'}`}><BrandIcon size={16} /></div>}
+                  </div>
+                  <div className="activity-content">
+                    <p className="activity-text">
+                      {item.type === 'found' ? t.dashboard.foundPersonReported : `${t.dashboard.missingLabel} ${(item as any).name || t.common.unknown}`}
+                      {item.location && <span className="activity-location"><MapPin size={12} /> {item.location}</span>}
+                    </p>
+                    <div className="activity-meta">
+                      <span className="activity-time">{formatDate(item.date)}</span>
+                      <StatusBadge status={item.status} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </Card>

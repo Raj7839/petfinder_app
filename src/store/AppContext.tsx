@@ -117,9 +117,33 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
+const PERSISTENCE_KEY = 'petfinder-state-cache';
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Load from localStorage first for instant UI
+  useEffect(() => {
+    const cached = localStorage.getItem(PERSISTENCE_KEY);
+    if (cached) {
+      try {
+        dispatch({ type: 'LOAD_STATE', payload: JSON.parse(cached) });
+      } catch (e) {
+        console.error('Failed to parse cached state');
+      }
+    }
+  }, []);
+
+  // Persist to localStorage on state changes
+  useEffect(() => {
+    localStorage.setItem(PERSISTENCE_KEY, JSON.stringify({
+      foundReports: state.foundReports,
+      missingReports: state.missingReports,
+      matches: state.matches,
+      notifications: state.notifications,
+    }));
+  }, [state.foundReports, state.missingReports, state.matches, state.notifications]);
 
   // Load initial state from Supabase
   useEffect(() => {

@@ -1,19 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-
-// ============================================
-// Auth Context — Login, Registration, Sessions
-// Security features (v2):
-//  ✅ SHA-256 password hashing (Web Crypto API)
-//  ✅ Login rate limiting: 5 attempts → 15-min lockout
-//  ✅ Session timeout: 30 min inactivity → auto-logout
-//  ✅ Strong password rules: 8+ chars, uppercase+number
-//  ✅ Registration rate limiting: 3/hour per browser
-//  ✅ Proper email validation regex
-//  ✅ Username: alphanumeric + underscore only
-//  ✅ Common password blocklist
-//  ✅ Audit log (last 100 events)
-//  ✅ mustChangePassword flag for default admin
-// ============================================
+import { supabase } from '../lib/supabaseClient';
 
 export interface AuthUser {
   id: string;
@@ -47,7 +33,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
-  sessionWarning: boolean;       // true when < 5 min remaining
+  sessionWarning: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string; lockedSeconds?: number }>;
   loginAsGuest: () => Promise<{ success: boolean; error?: string }>;
   register: (data: { username: string; password: string; fullName: string; email: string; role?: 'public' | 'family' }) => Promise<{ success: boolean; error?: string }>;
@@ -58,7 +44,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const AUTH_STORAGE_KEY    = 'petfinder-users';
 const SESSION_KEY         = 'petfinder-session';
 const LOCKOUT_KEY         = 'petfinder-lockouts';
 const AUDIT_KEY           = 'petfinder-audit';
@@ -66,9 +51,9 @@ const REG_RATE_KEY        = 'petfinder-reg-rate';
 const ACTIVITY_KEY        = 'petfinder-last-activity';
 
 const MAX_ATTEMPTS        = 5;
-const LOCKOUT_MS          = 15 * 60 * 1000;   // 15 minutes
-const SESSION_TIMEOUT_MS  = 30 * 60 * 1000;   // 30 minutes
-const SESSION_WARN_MS     = 5  * 60 * 1000;   // warn at 5 min remaining
+const LOCKOUT_MS          = 15 * 60 * 1000;
+const SESSION_TIMEOUT_MS  = 30 * 60 * 1000;
+const SESSION_WARN_MS     = 5  * 60 * 1000;
 const MAX_REG_PER_HOUR    = 3;
 
 const COMMON_PASSWORDS = [
@@ -77,13 +62,11 @@ const COMMON_PASSWORDS = [
   'master','pass1234','abc12345','india123','bharat123',
 ];
 
-// ─── Hashing ──────────────────────────────────────────────────
 async function sha256(str: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Legacy hash used in v1 (for migration compatibility)
 function legacyHash(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -94,13 +77,25 @@ function legacyHash(str: string): string {
   return 'h_' + Math.abs(hash).toString(36) + '_' + str.length;
 }
 
-// ─── Storage helpers ──────────────────────────────────────────
-function getStoredUsers(): StoredUser[] {
-  try { return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '[]'); } catch { return []; }
+async function getStoredUsers(): Promise<StoredUser[]> {
+  try {
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) throw error;
+    return data || [];
+  } catch (e) {
+    console.error('Failed to fetch profiles', e);
+    return [];
+  }
 }
-function saveUsers(users: StoredUser[]): void {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(users));
+
+async function insertUser(user: StoredUser): Promise<void> {
+  await supabase.from('profiles').insert(user);
 }
+
+async function updateUser(user: StoredUser): Promise<void> {
+  await supabase.from('profiles').upsert(user);
+}
+
 function getLockouts(): Record<string, LockoutRecord> {
   try { return JSON.parse(localStorage.getItem(LOCKOUT_KEY) || '{}'); } catch { return {}; }
 }
@@ -116,7 +111,6 @@ function appendAudit(event: string, username?: string, detail?: string): void {
   localStorage.setItem(AUDIT_KEY, JSON.stringify(log.slice(0, 100)));
 }
 
-// ─── Password validation ──────────────────────────────────────
 function validatePassword(password: string): string | null {
   if (password.length < 8) return 'Password must be at least 8 characters.';
   if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter.';
@@ -128,24 +122,20 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
-// ─── Email validation ─────────────────────────────────────────
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
-// ─── Username validation ──────────────────────────────────────
 function isValidUsername(u: string): boolean {
   return /^[a-zA-Z0-9_]{3,30}$/.test(u);
 }
 
-// ─── System Accounts bootstrap ──────────────────────────────────
 async function ensureSystemAccountsExist(): Promise<void> {
-  const users = getStoredUsers();
-  let updated = false;
+  const users = await getStoredUsers();
 
   if (!users.find(u => u.username === 'admin')) {
     const hash = await sha256('admin123');
-    users.push({
+    await insertUser({
       id: 'user-admin-001',
       username: 'admin',
       fullName: 'Petfinder Admin',
@@ -155,12 +145,11 @@ async function ensureSystemAccountsExist(): Promise<void> {
       passwordHash: hash,
       mustChangePassword: true,
     });
-    updated = true;
   }
 
   if (!users.find(u => u.username === 'guest')) {
     const hash = await sha256('guest123');
-    users.push({
+    await insertUser({
       id: 'user-guest-001',
       username: 'guest',
       fullName: 'Guest Reporter',
@@ -168,11 +157,9 @@ async function ensureSystemAccountsExist(): Promise<void> {
       role: 'public',
       createdAt: new Date().toISOString(),
       passwordHash: hash,
+      mustChangePassword: false,
     });
-    updated = true;
   }
-
-  if (updated) saveUsers(users);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -182,7 +169,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const activityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warnTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Session timeout management ─────────────────────────────
   const resetActivityTimers = useCallback(() => {
     localStorage.setItem(ACTIVITY_KEY, Date.now().toString());
 
@@ -205,27 +191,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) resetActivityTimers();
   }, [user, resetActivityTimers]);
 
-  // Listen to user activity
   useEffect(() => {
     const events = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'];
     events.forEach(e => window.addEventListener(e, handleUserActivity, { passive: true }));
     return () => events.forEach(e => window.removeEventListener(e, handleUserActivity));
   }, [handleUserActivity]);
 
-  // ── Bootstrap ─────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       await ensureSystemAccountsExist();
 
       const sessionUserId = localStorage.getItem(SESSION_KEY);
       if (sessionUserId) {
-        // Check if session has expired based on last activity
         const lastActivity = parseInt(localStorage.getItem(ACTIVITY_KEY) || '0', 10);
         if (lastActivity && Date.now() - lastActivity > SESSION_TIMEOUT_MS) {
           localStorage.removeItem(SESSION_KEY);
           appendAudit('session_expired_on_load');
         } else {
-          const users = getStoredUsers();
+          const users = await getStoredUsers();
           const found = users.find(u => u.id === sessionUserId);
           if (found) {
             const { passwordHash, ...safeUser } = found;
@@ -238,11 +221,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [resetActivityTimers]);
 
-  // ── Login ──────────────────────────────────────────────────
   const login = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string; lockedSeconds?: number }> => {
     const trimUser = username.trim().toLowerCase();
 
-    // Check lockout
     const lockouts = getLockouts();
     const rec = lockouts[trimUser];
     if (rec?.lockedUntil && Date.now() < rec.lockedUntil) {
@@ -251,7 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: `Account locked. Try again in ${Math.ceil(remaining / 60)} min ${remaining % 60}s.`, lockedSeconds: remaining };
     }
 
-    const users = getStoredUsers();
+    const users = await getStoredUsers();
     const found = users.find(u => u.username.toLowerCase() === trimUser);
 
     if (!found) {
@@ -259,13 +240,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: 'No account found with this username.' };
     }
 
-    // Verify password — try SHA-256 first, then legacy hash for migration
     const hash = await sha256(password);
     const legHash = legacyHash(password);
     const passwordMatch = found.passwordHash === hash || found.passwordHash === legHash;
 
     if (!passwordMatch) {
-      // Record failed attempt
       const attempts = (rec?.attempts || 0) + 1;
       const lockedUntil = attempts >= MAX_ATTEMPTS ? Date.now() + LOCKOUT_MS : null;
       lockouts[trimUser] = { attempts, lockedUntil, lastAttempt: Date.now() };
@@ -279,14 +258,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: `Incorrect password. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.` };
     }
 
-    // Upgrade legacy hash to SHA-256 silently on successful login
     if (found.passwordHash === legHash) {
-      const idx = users.indexOf(found);
-      users[idx] = { ...found, passwordHash: hash };
-      saveUsers(users);
+      await updateUser({ ...found, passwordHash: hash });
     }
 
-    // Clear lockout on success
     delete lockouts[trimUser];
     saveLockouts(lockouts);
 
@@ -298,15 +273,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   }, [resetActivityTimers]);
 
-  // ── Login As Guest ─────────────────────────────────────────
   const loginAsGuest = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
     const result = await login('guest', 'guest123');
     return result;
   }, [login]);
 
-  // ── Register ───────────────────────────────────────────────
   const register = useCallback(async (data: { username: string; password: string; fullName: string; email: string; role?: 'public' | 'family' }): Promise<{ success: boolean; error?: string }> => {
-    // Registration rate limiting
     const regRate = JSON.parse(localStorage.getItem(REG_RATE_KEY) || '[]') as number[];
     const oneHourAgo = Date.now() - 3600000;
     const recentRegs = regRate.filter(t => t > oneHourAgo);
@@ -329,7 +301,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const pwError = validatePassword(data.password);
     if (pwError) return { success: false, error: pwError };
 
-    const users = getStoredUsers();
+    const users = await getStoredUsers();
     if (users.find(u => u.username.toLowerCase() === trimUser)) {
       return { success: false, error: 'Username already taken.' };
     }
@@ -346,10 +318,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: data.role || 'public',
       createdAt: new Date().toISOString(),
       passwordHash: hash,
+      mustChangePassword: false,
     };
 
-    users.push(newUser);
-    saveUsers(users);
+    await insertUser(newUser);
     recentRegs.push(Date.now());
     localStorage.setItem(REG_RATE_KEY, JSON.stringify(recentRegs));
 
@@ -361,7 +333,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   }, [resetActivityTimers]);
 
-  // ── Change Password ────────────────────────────────────────
   const changePassword = useCallback(async (oldPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
     if (!user) return { success: false, error: 'Not logged in.' };
 
@@ -369,27 +340,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (pwError) return { success: false, error: pwError };
     if (oldPassword === newPassword) return { success: false, error: 'New password must be different from current password.' };
 
-    const users = getStoredUsers();
-    const idx = users.findIndex(u => u.id === user.id);
-    if (idx === -1) return { success: false, error: 'User not found.' };
+    const users = await getStoredUsers();
+    const found = users.find(u => u.id === user.id);
+    if (!found) return { success: false, error: 'User not found.' };
 
     const oldHash = await sha256(oldPassword);
     const legHash = legacyHash(oldPassword);
-    if (users[idx].passwordHash !== oldHash && users[idx].passwordHash !== legHash) {
+    if (found.passwordHash !== oldHash && found.passwordHash !== legHash) {
       return { success: false, error: 'Current password is incorrect.' };
     }
 
     const newHash = await sha256(newPassword);
-    users[idx] = { ...users[idx], passwordHash: newHash, mustChangePassword: false };
-    saveUsers(users);
+    await updateUser({ ...found, passwordHash: newHash, mustChangePassword: false });
 
-    // Update in-state user to remove mustChangePassword
     setUser(prev => prev ? { ...prev, mustChangePassword: false } : prev);
     appendAudit('password_change', user.username);
     return { success: true };
   }, [user]);
 
-  // ── Logout ─────────────────────────────────────────────────
   const logout = useCallback(() => {
     if (activityTimer.current) clearTimeout(activityTimer.current);
     if (warnTimer.current)     clearTimeout(warnTimer.current);
@@ -423,7 +391,6 @@ export function useAuth(): AuthContextType {
   return ctx;
 }
 
-/** Read audit log — for admin panel */
 export function readAuditLog(): AuditEntry[] {
   try { return JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]'); } catch { return []; }
 }

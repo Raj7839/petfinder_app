@@ -10,9 +10,17 @@ export async function loadModel() {
   if (model) return model;
   
   try {
+    // Try to use WebGL for acceleration if available
+    await tf.setBackend('webgl').catch(() => {
+      console.warn('WebGL backend not supported, falling back to CPU');
+      return tf.setBackend('cpu');
+    });
+    
     // Ensure tfjs is ready
     await tf.ready();
-    // Load MobileNet (using the smaller model for faster browser performance)
+    console.log('TFJS Backend:', tf.getBackend());
+
+    // Load MobileNet (using version 2 with alpha 1.0 for high accuracy)
     model = await mobilenet.load({ version: 2, alpha: 1.0 });
     console.log('MobileNet model loaded successfully');
     return model;

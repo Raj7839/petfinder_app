@@ -6,14 +6,17 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { useApp } from '../../store/AppContext';
 import { formatDate } from '../../utils/helpers';
+import { useSearchParams } from 'react-router-dom';
 import './MapView.css';
 
 export function MapViewPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const { state } = useApp();
-  const [filter, setFilter] = useState<'all' | 'found' | 'missing'>('all');
-  const [showFilter, setShowFilter] = useState(false);
+  const [searchParams] = useSearchParams();
+  const initialFilter = searchParams.get('type') as 'found' | 'missing' | null;
+  const [filter, setFilter] = useState<'all' | 'found' | 'missing'>(initialFilter || 'all');
+  const [showFilter, setShowFilter] = useState(!!initialFilter);
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;

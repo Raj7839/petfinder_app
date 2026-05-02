@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useState } from 'react';
 import type { FoundAnimalReport, MissingAnimalReport, MatchResult, AppNotification, UserProfile } from '../types';
 import { runMatchingForFoundReport, runMatchingForMissingReport, runFullRematching } from '../lib/matchingEngine';
+import { supabase } from '../lib/supabaseClient';
 
 const REMATCH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -9,7 +10,7 @@ interface AppState {
   missingReports: MissingAnimalReport[];
   matches: MatchResult[];
   notifications: AppNotification[];
-  user: UserProfile;
+  user: UserProfile | null;
   sidebarCollapsed: boolean;
 }
 
@@ -23,27 +24,21 @@ type Action =
   | { type: 'DELETE_FOUND_REPORT'; payload: string }
   | { type: 'DELETE_MISSING_REPORT'; payload: string }
   | { type: 'ADD_MATCH'; payload: MatchResult }
+  | { type: 'SET_MATCHES'; payload: MatchResult[] }
   | { type: 'UPDATE_MATCH'; payload: { id: string; updates: Partial<MatchResult> } }
   | { type: 'ADD_NOTIFICATION'; payload: AppNotification }
+  | { type: 'SET_NOTIFICATIONS'; payload: AppNotification[] }
   | { type: 'MARK_NOTIFICATION_READ'; payload: string }
   | { type: 'CLEAR_NOTIFICATIONS' }
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'LOAD_STATE'; payload: Partial<AppState> };
-
-const defaultUser: UserProfile = {
-  id: 'user-1',
-  name: 'Demo User',
-  email: 'demo@animalmatch.com',
-  role: 'admin',
-  createdAt: new Date().toISOString(),
-};
 
 const initialState: AppState = {
   foundReports: [],
   missingReports: [],
   matches: [],
   notifications: [],
-  user: defaultUser,
+  user: null,
   sidebarCollapsed: false,
 };
 
@@ -77,6 +72,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, missingReports: state.missingReports.filter(r => r.id !== action.payload) };
     case 'ADD_MATCH':
       return { ...state, matches: [action.payload, ...state.matches] };
+    case 'SET_MATCHES':
+      return { ...state, matches: action.payload };
     case 'UPDATE_MATCH':
       return {
         ...state,
@@ -86,6 +83,8 @@ function reducer(state: AppState, action: Action): AppState {
       };
     case 'ADD_NOTIFICATION':
       return { ...state, notifications: [action.payload, ...state.notifications] };
+    case 'SET_NOTIFICATIONS':
+      return { ...state, notifications: action.payload };
     case 'MARK_NOTIFICATION_READ':
       return {
         ...state,
@@ -104,43 +103,16 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
-const STORAGE_KEY = 'animal-match-data';
-
-function loadFromStorage(): Partial<AppState> {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (data) return JSON.parse(data);
-  } catch (e) {
-    console.warn('Failed to load state from localStorage', e);
-  }
-  return {};
-}
-
-function saveToStorage(state: AppState) {
-  try {
-    const toSave = {
-      foundReports: state.foundReports,
-      missingReports: state.missingReports,
-      matches: state.matches,
-      notifications: state.notifications,
-      user: state.user,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-  } catch (e) {
-    console.warn('Failed to save state to localStorage', e);
-  }
-}
-
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<Action>;
-  addFoundReport: (report: FoundAnimalReport) => void;
-  addMissingReport: (report: MissingAnimalReport) => void;
-  addMatch: (match: MatchResult) => void;
-  addNotification: (notification: AppNotification) => void;
+  addFoundReport: (report: FoundAnimalReport) => Promise<void>;
+  addMissingReport: (report: MissingAnimalReport) => Promise<void>;
+  addMatch: (match: MatchResult) => Promise<void>;
+  addNotification: (notification: AppNotification) => Promise<void>;
   unreadCount: number;
   isLoading: boolean;
-  dataSource: 'localStorage';
+  dataSource: 'supabase';
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -149,32 +121,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load initial state from Supabase
   useEffect(() => {
-    const saved = loadFromStorage();
-    if (saved) {
-      dispatch({ type: 'LOAD_STATE', payload: saved });
-    }
-    setIsLoading(false);
+    (async () => {
+      try {
+        const [
+          { data: missingReports },
+          { data: foundReports },
+          { data: matches },
+          { data: notifications }
+        ] = await Promise.all([
+          supabase.from('missing_reports').select('*').order('createdAt', { ascending: false }),
+          supabase.from('found_reports').select('*').order('createdAt', { ascending: false }),
+          supabase.from('matches').select('*').order('timestamp', { ascending: false }),
+          supabase.from('notifications').select('*').order('timestamp', { ascending: false }),
+        ]);
+
+        dispatch({
+          type: 'LOAD_STATE',
+          payload: {
+            missingReports: missingReports || [],
+            foundReports: foundReports || [],
+            matches: matches || [],
+            notifications: notifications || [],
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load state from Supabase', err);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, []);
 
-  useEffect(() => {
-    if (!isLoading) {
-      saveToStorage(state);
-    }
-  }, [state.foundReports, state.missingReports, state.matches, state.notifications, isLoading]);
-
-  const runRematching = useCallback(() => {
+  const runRematching = useCallback(async () => {
     if (isLoading) return;
     const { matches: newMatches, notifications: newNotifs } = runFullRematching(
       state.foundReports,
       state.missingReports,
       state.matches
     );
+
     for (const match of newMatches) {
       dispatch({ type: 'ADD_MATCH', payload: match });
+      await supabase.from('matches').insert(match).catch(console.error);
     }
     for (const notif of newNotifs) {
       dispatch({ type: 'ADD_NOTIFICATION', payload: notif });
+      await supabase.from('notifications').insert(notif).catch(console.error);
     }
   }, [state.foundReports, state.missingReports, state.matches, isLoading]);
 
@@ -184,36 +178,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(timer);
   }, [runRematching, isLoading]);
 
-  const addFoundReport = useCallback((report: FoundAnimalReport) => {
+  const addFoundReport = useCallback(async (report: FoundAnimalReport) => {
     dispatch({ type: 'ADD_FOUND_REPORT', payload: report });
+    await supabase.from('found_reports').insert(report).catch(console.error);
 
     const { matches, notifications } = runMatchingForFoundReport(report, state.missingReports);
     for (const match of matches) {
       dispatch({ type: 'ADD_MATCH', payload: match });
+      await supabase.from('matches').insert(match).catch(console.error);
     }
     for (const notif of notifications) {
       dispatch({ type: 'ADD_NOTIFICATION', payload: notif });
+      await supabase.from('notifications').insert(notif).catch(console.error);
     }
   }, [state.missingReports]);
 
-  const addMissingReport = useCallback((report: MissingAnimalReport) => {
+  const addMissingReport = useCallback(async (report: MissingAnimalReport) => {
     dispatch({ type: 'ADD_MISSING_REPORT', payload: report });
+    await supabase.from('missing_reports').insert(report).catch(console.error);
 
     const { matches, notifications } = runMatchingForMissingReport(report, state.foundReports);
     for (const match of matches) {
       dispatch({ type: 'ADD_MATCH', payload: match });
+      await supabase.from('matches').insert(match).catch(console.error);
     }
     for (const notif of notifications) {
       dispatch({ type: 'ADD_NOTIFICATION', payload: notif });
+      await supabase.from('notifications').insert(notif).catch(console.error);
     }
   }, [state.foundReports]);
 
-  const addMatch = useCallback((match: MatchResult) => {
+  const addMatch = useCallback(async (match: MatchResult) => {
     dispatch({ type: 'ADD_MATCH', payload: match });
+    await supabase.from('matches').insert(match).catch(console.error);
   }, []);
 
-  const addNotification = useCallback((notification: AppNotification) => {
+  const addNotification = useCallback(async (notification: AppNotification) => {
     dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+    await supabase.from('notifications').insert(notification).catch(console.error);
   }, []);
 
   const unreadCount = state.notifications.filter(n => !n.read).length;
@@ -228,7 +230,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addNotification,
       unreadCount,
       isLoading,
-      dataSource: 'localStorage',
+      dataSource: 'supabase',
     }}>
       {children}
     </AppContext.Provider>

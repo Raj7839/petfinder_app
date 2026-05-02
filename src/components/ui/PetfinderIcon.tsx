@@ -4,8 +4,8 @@ interface PetfinderIconProps {
 }
 
 /**
- * Custom Petfinder logo icon — magnifying glass with a person silhouette inside.
- * Represents "Petfinder" (search) for missing people.
+ * Custom Petfinder logo icon — magnifying glass with a paw print inside.
+ * Represents "Petfinder" (search) for missing pets.
  */
 export function PetfinderIcon({ size = 22, className }: PetfinderIconProps) {
   return (
@@ -22,13 +22,19 @@ export function PetfinderIcon({ size = 22, className }: PetfinderIconProps) {
       className={className}
     >
       {/* Magnifying glass lens */}
-      <circle cx="10" cy="10" r="7" />
+      <circle cx="10" cy="10" r="8" />
       {/* Magnifying glass handle */}
-      <line x1="15.5" y1="15.5" x2="21" y2="21" />
-      {/* Person head inside the lens */}
-      <circle cx="10" cy="8" r="2" strokeWidth="1.5" />
-      {/* Person body inside the lens */}
-      <path d="M7 14c0-1.7 1.3-3 3-3s3 1.3 3 3" strokeWidth="1.5" />
+      <line x1="16" y1="16" x2="22" y2="22" />
+      {/* Paw print inside (Emotional pet element) */}
+      <path
+        d="M10 11.5c-1.3 0-2.2.8-2.2 1.8s.9 1.7 2.2 1.7 2.2-.7 2.2-1.7-.9-1.8-2.2-1.8z"
+        fill="currentColor"
+        stroke="none"
+      />
+      <circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="9" r="1" fill="currentColor" stroke="none" />
+      <circle cx="11" cy="9" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12.5" cy="10.5" r="1" fill="currentColor" stroke="none" />
     </svg>
   );
 }

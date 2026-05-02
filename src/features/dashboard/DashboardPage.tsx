@@ -84,36 +84,44 @@ export function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="dashboard-stats">
-        <Card className="stat-card stat-found" hoverable>
-          <div className="stat-icon-wrap stat-icon-blue"><Eye size={22} /></div>
-          <div className="stat-info">
-            <span className="stat-value">{animatedStats.found}</span>
-            <span className="stat-label">{t.dashboard.foundReports}</span>
-          </div>
-          <TrendingUp size={16} className="stat-trend" />
-        </Card>
-        <Card className="stat-card stat-missing" hoverable>
-          <div className="stat-icon-wrap stat-icon-amber"><SearchCheck size={22} /></div>
-          <div className="stat-info">
-            <span className="stat-value">{animatedStats.missing}</span>
-            <span className="stat-label">{t.dashboard.missingReports}</span>
-          </div>
-          <AlertTriangle size={16} className="stat-trend stat-trend-warning" />
-        </Card>
-        <Card className="stat-card stat-matches" hoverable>
-          <div className="stat-icon-wrap stat-icon-emerald"><GitCompareArrows size={22} /></div>
-          <div className="stat-info">
-            <span className="stat-value">{animatedStats.matches}</span>
-            <span className="stat-label">{t.dashboard.potentialMatches}</span>
-          </div>
-        </Card>
-        <Card className="stat-card stat-resolved" hoverable>
-          <div className="stat-icon-wrap stat-icon-purple"><Clock size={22} /></div>
-          <div className="stat-info">
-            <span className="stat-value">{animatedStats.resolved}</span>
-            <span className="stat-label">{t.dashboard.resolved}</span>
-          </div>
-        </Card>
+        <Link to="/map?type=found" className="stat-link">
+          <Card className="stat-card stat-found" hoverable>
+            <div className="stat-icon-wrap stat-icon-blue"><Eye size={22} /></div>
+            <div className="stat-info">
+              <span className="stat-value">{animatedStats.found}</span>
+              <span className="stat-label">{t.dashboard.foundReports}</span>
+            </div>
+            <TrendingUp size={16} className="stat-trend" />
+          </Card>
+        </Link>
+        <Link to="/map?type=missing" className="stat-link">
+          <Card className="stat-card stat-missing" hoverable>
+            <div className="stat-icon-wrap stat-icon-amber"><SearchCheck size={22} /></div>
+            <div className="stat-info">
+              <span className="stat-value">{animatedStats.missing}</span>
+              <span className="stat-label">{t.dashboard.missingReports}</span>
+            </div>
+            <AlertTriangle size={16} className="stat-trend stat-trend-warning" />
+          </Card>
+        </Link>
+        <Link to="/matches?status=pending" className="stat-link">
+          <Card className="stat-card stat-matches" hoverable>
+            <div className="stat-icon-wrap stat-icon-emerald"><GitCompareArrows size={22} /></div>
+            <div className="stat-info">
+              <span className="stat-value">{animatedStats.matches}</span>
+              <span className="stat-label">{t.dashboard.potentialMatches}</span>
+            </div>
+          </Card>
+        </Link>
+        <Link to="/matches?status=confirmed" className="stat-link">
+          <Card className="stat-card stat-resolved" hoverable>
+            <div className="stat-icon-wrap stat-icon-purple"><Clock size={22} /></div>
+            <div className="stat-info">
+              <span className="stat-value">{animatedStats.resolved}</span>
+              <span className="stat-label">{t.dashboard.resolved}</span>
+            </div>
+          </Card>
+        </Link>
       </div>
 
       {/* Content Grid */}

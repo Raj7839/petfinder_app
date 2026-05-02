@@ -77,12 +77,14 @@ export function QuickScanPage() {
       reportedBy: 'user-1',
     };
 
-    await new Promise(r => setTimeout(r, 2200));
+    // Artificial delay for "scanning" feel, reduced for better responsiveness
+    await new Promise(r => setTimeout(r, 800));
 
     const matchResults: ScanResult[] = [];
     for (const missing of state.missingReports) {
       const { confidence, reasons } = computeMatchConfidence(tempReport, missing);
-      if (confidence >= 40) {
+      // Using 35 as lower threshold for "Quick Scan" to ensure we don't miss potential matches
+      if (confidence >= 35) {
         matchResults.push({ missing, confidence: confidence, reasons });
       }
     }

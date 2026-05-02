@@ -6,6 +6,7 @@ import { Badge, StatusBadge } from '../../components/ui/Badge';
 import { useApp } from '../../store/AppContext';
 import { useAuth } from '../../store/AuthContext';
 import { useToast } from '../../components/ui/Toast';
+import { useSearchParams } from 'react-router-dom';
 import { formatDate, getConfidenceColor, getConfidenceLabel, calculateDistance, formatDistance } from '../../utils/helpers';
 import './Matches.css';
 
@@ -13,7 +14,9 @@ export function MatchesPage() {
   const { state, dispatch, addNotification } = useApp();
   const { isAdmin } = useAuth();
   const { showToast } = useToast();
-  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'dismissed'>('all');
+  const [searchParams] = useSearchParams();
+  const initialFilter = searchParams.get('status') as 'pending' | 'confirmed' | 'dismissed' | null;
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'dismissed'>(initialFilter || 'all');
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
 
   const filteredMatches = useMemo(() => {
@@ -181,8 +184,12 @@ export function MatchesPage() {
                       {missing?.contact && (
                         <p className="match-contact"><Phone size={14} /> <strong>Contact:</strong> {missing.contact.name} - {missing.contact.phone}</p>
                       )}
+                      <Button size="sm" variant="secondary" className="poster-btn-inline" icon={<Printer size={14} />} onClick={() => setSelectedPoster(missing)}>
+                        Print Missing Poster
+                      </Button>
                     </div>
                   </div>
+                  {selectedPoster && <PosterGenerator report={selectedPoster} onClose={() => setSelectedPoster(null)} />}
                   {match.status === 'pending' && isAdmin && (
                     <div className="match-actions">
                       <Button variant="success" icon={<CheckCircle size={18} />} onClick={(e) => { e.stopPropagation(); handleConfirm(match.id); }}>

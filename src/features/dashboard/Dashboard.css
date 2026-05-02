@@ -107,6 +107,8 @@
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-4);
 }
+.stat-link { text-decoration: none; color: inherit; }
+.stat-link:hover .stat-card { border-color: var(--color-border-hover); background: var(--color-bg-card-hover); }
 
 .stat-card {
   display: flex;

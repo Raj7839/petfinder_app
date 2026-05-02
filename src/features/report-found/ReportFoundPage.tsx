@@ -70,26 +70,40 @@ export function ReportFoundPage() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1000));
-    const report: FoundAnimalReport = {
-      id: generateId(),
-      photos,
-      location: {
-        lat: location.lat || geo.latitude || 28.6139,
-        lng: location.lng || geo.longitude || 77.2090,
-        address: location.address || 'Location detected via GPS',
-      },
-      timestamp: new Date().toISOString(),
-      details,
-      imageFeatures,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      reportedBy: 'user-1',
-    };
-    addFoundReport(report);
-    setSubmitting(false);
-    setSubmitted(true);
-    showToast({ type: 'success', title: 'Report Submitted!', message: 'AI matching engine is scanning for matches now.' });
+    
+    try {
+      // Upload photos to Supabase Storage and get URLs
+      const photoUrls: string[] = [];
+      for (const photo of photos) {
+        const url = await uploadAnimalPhoto(photo);
+        if (url) photoUrls.push(url);
+      }
+
+      const report: FoundAnimalReport = {
+        id: generateId(),
+        photos: photoUrls,
+        location: {
+          lat: location.lat || geo.latitude || 28.6139,
+          lng: location.lng || geo.longitude || 77.2090,
+          address: location.address || 'Location detected via GPS',
+        },
+        timestamp: new Date().toISOString(),
+        details,
+        imageFeatures,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        reportedBy: 'user-1',
+      };
+      
+      addFoundReport(report);
+      setSubmitted(true);
+      showToast({ type: 'success', title: 'Report Submitted!', message: 'AI matching engine is scanning for matches now.' });
+    } catch (err) {
+      console.error('Failed to submit report', err);
+      showToast({ type: 'error', title: 'Submission Failed', message: 'There was an error saving your report.' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {

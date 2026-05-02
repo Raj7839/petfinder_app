@@ -4,11 +4,11 @@ import { getMatchPercentage } from './tfjs';
 
 // Base weights for matching (sum = 1.0 when all signals have data)
 const BASE_WEIGHTS: Record<string, number> = {
-  type: 0.25,        // Must be same type (dog vs dog)
-  visual: 0.35,      // TFJS Image similarity
-  location: 0.20,
-  temporal: 0.10,
-  description: 0.10,
+  type: 0.20,        // Animal type (dog, cat, etc.)
+  visual: 0.45,      // TFJS Image similarity - primary signal
+  location: 0.20,    // Geolocation proximity
+  temporal: 0.10,    // Time difference
+  description: 0.05, // Textual metadata (breed, color, etc.)
 };
 
 type SignalResult = { score: number; reason?: string; hasData: boolean };

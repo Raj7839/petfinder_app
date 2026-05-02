@@ -117,9 +117,11 @@ export function ProfilePage() {
                   <Badge variant="amber" size="sm">Missing</Badge>
                   <span>{r.identity.name || 'Unknown'}</span>
                 </div>
+                <Button size="xs" variant="ghost" icon={<Printer size={12} />} onClick={() => setSelectedPoster(r)}>Poster</Button>
               </div>
             ))}
           </div>
+          {selectedPoster && <PosterGenerator report={selectedPoster} onClose={() => setSelectedPoster(null)} />}
         </Card>
 
         {/* Settings */}

@@ -14,6 +14,8 @@ import { ProfilePage } from './features/profile/ProfilePage';
 import { QuickScanPage } from './features/quick-scan/QuickScanPage';
 import { LoginPage } from './features/auth/LoginPage';
 import { RegisterPage } from './features/auth/RegisterPage';
+import { loadModel } from './lib/tfjs';
+import { useEffect } from 'react';
 
 
 // Role guard — redirects unauthorized users to dashboard
@@ -87,6 +89,11 @@ function ProtectedRoutes() {
 }
 
 export default function App() {
+  useEffect(() => {
+    // Pre-load the AI model for faster scanning later
+    loadModel().catch(err => console.error('Early model load failed', err));
+  }, []);
+
   return (
     <LanguageProvider>
       <BrowserRouter>

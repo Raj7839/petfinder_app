@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Clock, ShieldAlert, ChevronLeft, CheckCircle2 } from 'lucide-react';
-import { PetfinderIcon } from '../../components/ui/PetfinderIcon';
+import { BrandIcon } from '../../components/ui/BrandIcon';
 import { useAuth } from '../../store/AuthContext';
 import { useLanguage } from '../../i18n';
 import './Auth.css';
@@ -10,7 +10,7 @@ export function LoginPage() {
   const { login, loginAsGuest, resetPassword, isAuthenticated, sessionWarning, dismissSessionWarning } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -80,10 +80,11 @@ export function LoginPage() {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-logo">
-          <PetfinderIcon size={36} />
-          <h1>petfinder</h1>
+          <BrandIcon size={36} />
+          <h1>{t.brand.name}</h1>
         </div>
-        <p className="auth-tagline">Find Lost. Bring Home. AI-Powered.</p>
+        <p className="auth-tagline">{t.brand.taglineHindi}</p>
+        <p className="auth-tagline-sub">{t.brand.tagline}</p>
 
         {/* Session timeout warning */}
         {sessionWarning && (
@@ -104,7 +105,7 @@ export function LoginPage() {
             {isResetMode ? t.auth.recoveryTitle : t.auth.welcomeBack}
           </h2>
         </div>
-        
+
         {isResetMode && <p className="auth-subtitle">{t.auth.recoverySubtitle}</p>}
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -221,8 +222,8 @@ export function LoginPage() {
             <div className="auth-divider">
               <span>OR</span>
             </div>
-            <button 
-              className="auth-guest-btn" 
+            <button
+              className="auth-guest-btn"
               onClick={handleGuestLogin}
               disabled={loading || lockedSeconds > 0}
               type="button"

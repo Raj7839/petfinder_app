@@ -1,13 +1,13 @@
-interface PetfinderIconProps {
+interface BrandIconProps {
   size?: number;
   className?: string;
 }
 
 /**
- * Custom Petfinder logo icon — magnifying glass with a paw print inside.
- * Represents "Petfinder" (search) for missing pets.
+ * Custom brand logo icon — magnifying glass with a paw print inside.
+ * Represents search for missing pets.
  */
-export function PetfinderIcon({ size = 22, className }: PetfinderIconProps) {
+export function BrandIcon({ size = 22, className }: BrandIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

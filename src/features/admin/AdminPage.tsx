@@ -181,8 +181,8 @@ export function AdminPage() {
               <div className="settings-row">
                 <Button variant="danger" size="sm" icon={<AlertTriangle size={16} />} onClick={() => {
                   if (confirm('Clear all data? This will reset everything and reload fresh data.')) {
-                    localStorage.removeItem('petfinder-data');
-                    localStorage.removeItem('petfinder-data-version');
+                    localStorage.removeItem('findmyfur-data');
+                    localStorage.removeItem('findmyfur-data-version');
                     window.location.reload();
                   }
                 }}>

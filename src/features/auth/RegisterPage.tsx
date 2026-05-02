@@ -1,13 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
-import { PetfinderIcon } from '../../components/ui/PetfinderIcon';
+import { BrandIcon } from '../../components/ui/BrandIcon';
 import { useAuth } from '../../store/AuthContext';
+import { useLanguage } from '../../i18n';
 import { getPasswordStrength } from '../../utils/sanitize';
 import './Auth.css';
 
 export function RegisterPage() {
   const { register, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -31,7 +33,7 @@ export function RegisterPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError(t.auth.passwordsMismatch);
       return;
     }
     if (strength.score < 2) {
@@ -53,10 +55,11 @@ export function RegisterPage() {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-logo">
-          <PetfinderIcon size={36} />
-          <h1>petfinder</h1>
+          <BrandIcon size={36} />
+          <h1>{t.brand.name}</h1>
         </div>
-        <p className="auth-tagline">Find Lost. Bring Home. AI-Powered.</p>
+        <p className="auth-tagline">{t.brand.taglineHindi}</p>
+        <p className="auth-tagline-sub">{t.brand.tagline}</p>
 
         <h2 className="auth-title">Create Your Account</h2>
 

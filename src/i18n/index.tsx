@@ -11,8 +11,12 @@ export type Language = 'en';
 // ─── English Translations ─────────────────────────────────────
 const en = {
   // Brand
-  tagline: 'Jo Kho Gaya, Woh Milega.',
-  taglineHindi: 'जो खो गया, वो मिलेगा।',
+  brand: {
+    name: 'findmyfur',
+    fullName: 'findmyfur AI',
+    tagline: "Your pet's way home, powered by AI.",
+    taglineHindi: 'जो खो गया, वो मिलेगा।',
+  },
 
   // Navigation
   nav: {

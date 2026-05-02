@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Menu, Search, LogOut } from 'lucide-react';
-import { PetfinderIcon } from '../ui/PetfinderIcon';
+import { BrandIcon } from '../ui/BrandIcon';
 import { useApp } from '../../store/AppContext';
 import { useAuth } from '../../store/AuthContext';
 import { useLanguage } from '../../i18n';
@@ -36,7 +36,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
     if (path.includes('matches')) return t.header.matchCenter;
     if (path.includes('admin')) return t.header.adminPanel;
     if (path.includes('profile')) return t.header.profile;
-    return 'petfinder';
+    return t.brand.name;
   };
 
   return (
@@ -47,9 +47,9 @@ export function Header({ onToggleSidebar }: HeaderProps) {
         </button>
         <Link to="/" className="header-logo">
           <div className="header-logo-icon">
-            <PetfinderIcon size={22} />
+            <BrandIcon size={22} />
           </div>
-          <span className="header-logo-text">petfinder</span>
+          <span className="header-logo-text">{t.brand.name}</span>
         </Link>
         <span className="header-divider" />
         <h1 className="header-page-title">{getPageTitle()}</h1>

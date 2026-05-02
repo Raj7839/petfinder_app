@@ -117,7 +117,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
-const PERSISTENCE_KEY = 'petfinder-state-cache';
+const PERSISTENCE_KEY = 'findmyfur-state-cache';
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);

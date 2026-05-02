@@ -3,7 +3,7 @@ import { Download, Printer, X, MapPin, Phone, Heart } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import type { MissingAnimalReport } from '../types';
-import { formatDate } from '../utils/helpers';
+import { useLanguage } from '../i18n';
 
 interface PosterGeneratorProps {
   report: MissingAnimalReport;
@@ -11,6 +11,7 @@ interface PosterGeneratorProps {
 }
 
 export function PosterGenerator({ report, onClose }: PosterGeneratorProps) {
+  const { t } = useLanguage();
   const handlePrint = () => {
     window.print();
   };
@@ -68,7 +69,7 @@ export function PosterGenerator({ report, onClose }: PosterGeneratorProps) {
             </div>
 
             <div className="poster-branding">
-              <Heart size={16} fill="currentColor" /> Created with <strong>petfinder</strong>
+              <Heart size={16} fill="currentColor" /> Created with <strong>{t.brand.name}</strong>
             </div>
           </div>
         </div>

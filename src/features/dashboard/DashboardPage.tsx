@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, SearchCheck, GitCompareArrows, MapPin, TrendingUp, Clock, AlertTriangle, ArrowRight, Users, Scan } from 'lucide-react';
-import { PetfinderIcon } from '../../components/ui/PetfinderIcon';
+import { BrandIcon } from '../../components/ui/BrandIcon';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
@@ -53,9 +53,9 @@ export function DashboardPage() {
       <div className="dashboard-hero">
         <div className="dashboard-hero-content">
           <h1 className="dashboard-hero-title">
-            <span className="gradient-text">petfinder</span>
+             <span className="gradient-text">{t.brand.name}</span>
           </h1>
-          <p className="dashboard-hero-tagline">Find Lost. Bring Home.</p>
+          <p className="dashboard-hero-tagline">{t.brand.tagline}</p>
           <p className="dashboard-hero-subtitle">Our AI-powered engine uses real-time image recognition and behavioral matching to locate and reunite missing pets with their owners instantly.</p>
           <div className="dashboard-hero-actions">
             <Link to="/scan">
@@ -74,7 +74,7 @@ export function DashboardPage() {
           <div className="hero-orb hero-orb-2" />
           <div className="hero-orb hero-orb-3" />
           <div className="hero-icon-grid">
-            <div className="hero-icon-item"><PetfinderIcon size={32} /></div>
+            <div className="hero-icon-item"><BrandIcon size={32} /></div>
             <div className="hero-icon-item"><Users size={32} /></div>
             <div className="hero-icon-item"><MapPin size={32} /></div>
             <div className="hero-icon-item"><GitCompareArrows size={32} /></div>

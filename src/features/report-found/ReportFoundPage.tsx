@@ -23,6 +23,8 @@ export function ReportFoundPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [matchCount, setMatchCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const geo = useGeolocation();
   const { addFoundReport } = useApp();
@@ -40,6 +42,20 @@ export function ReportFoundPage() {
       try {
         const features = await extractFeatures(img);
         setImageFeatures(features);
+        
+        // Real-time Match Scan
+        setIsScanning(true);
+        const { computeMatchConfidence } = await import('../../lib/matchingEngine');
+        let matches = 0;
+        for (const m of state.missingReports) {
+          const { confidence } = computeMatchConfidence({ imageFeatures: features, details: { type: details.type } } as any, m);
+          if (confidence >= 35) matches++;
+        }
+        setMatchCount(matches);
+        setIsScanning(false);
+        if (matches > 0) {
+          showToast({ type: 'info', title: 'Matches Found!', message: `AI found ${matches} potential leads. Finish the report to see them!` });
+        }
       } catch (err) {
         console.error('TFJS error', err);
       }
@@ -64,6 +80,20 @@ export function ReportFoundPage() {
     try {
       const features = await extractFeatures(img);
       setImageFeatures(features);
+      
+      // Real-time Match Scan
+      setIsScanning(true);
+      const { computeMatchConfidence } = await import('../../lib/matchingEngine');
+      let matches = 0;
+      for (const m of state.missingReports) {
+        const { confidence } = computeMatchConfidence({ imageFeatures: features, details: { type: details.type } } as any, m);
+        if (confidence >= 35) matches++;
+      }
+      setMatchCount(matches);
+      setIsScanning(false);
+      if (matches > 0) {
+        showToast({ type: 'info', title: 'Matches Found!', message: `AI found ${matches} potential leads. Finish the report to see them!` });
+      }
     } catch (err) {
       console.error('TFJS error', err);
     }
@@ -169,14 +199,61 @@ export function ReportFoundPage() {
                 {photos.map((p, i) => (
                   <div key={i} className="photo-preview">
                     <img src={p} alt={`Upload ${i + 1}`} />
-                    <button className="photo-remove" onClick={(e) => { e.stopPropagation(); setPhotos([]); setImageFeatures(undefined); }}>×</button>
+                    <button className="photo-remove" onClick={(e) => { e.stopPropagation(); setPhotos([]); setImageFeatures(undefined); setMatchCount(0); }}>×</button>
                   </div>
                 ))}
               </div>
+              
+              {isScanning && (
+                <div className="realtime-scan-status">
+                  <div className="scan-spinner" />
+                  <span>AI Scanning for matches...</span>
+                </div>
+              )}
+              
+              {!isScanning && matchCount > 0 && (
+                <div className="realtime-scan-status success">
+                  <Scan size={16} />
+                  <span>AI found {matchCount} potential leads!</span>
+                </div>
+              )}
             </div>
           )}
 
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
+          
+          <style>{`
+            .realtime-scan-status {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-top: 16px;
+              padding: 12px 16px;
+              background: var(--color-bg-secondary);
+              border-radius: var(--radius-md);
+              font-size: 14px;
+              color: var(--color-text-secondary);
+              animation: fadeIn 0.3s ease;
+            }
+            .realtime-scan-status.success {
+              background: rgba(16, 185, 129, 0.1);
+              color: #10b981;
+              border: 1px solid rgba(16, 185, 129, 0.2);
+            }
+            .scan-spinner {
+              width: 16px;
+              height: 16px;
+              border: 2px solid rgba(255,255,255,0.1);
+              border-top-color: var(--color-primary);
+              border-radius: 50%;
+              animation: spin 0.8s linear infinite;
+            }
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(-5px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
+
           <div className="report-nav">
             <div />
             <Button variant="primary" onClick={() => setStep(2)} disabled={photos.length === 0} iconRight={<ChevronRight size={18} />}>

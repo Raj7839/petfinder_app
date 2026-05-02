@@ -1,0 +1,28 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ master ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+          # Create a copy of index.html as 404.html to handle client-side routing
+          cp dist/index.html dist/404.html
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages

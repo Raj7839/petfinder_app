@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, SearchCheck, GitCompareArrows, MapPin, TrendingUp, Clock, AlertTriangle, ArrowRight, Users, Scan } from 'lucide-react';
+import { Eye, SearchCheck, GitCompareArrows, MapPin, TrendingUp, Clock, AlertTriangle, ArrowRight, Users, Scan, RefreshCw } from 'lucide-react';
 import { BrandIcon } from '../../components/ui/BrandIcon';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -11,7 +11,7 @@ import { formatDate } from '../../utils/helpers';
 import './Dashboard.css';
 
 export function DashboardPage() {
-  const { state } = useApp();
+  const { state, fetchLatestData, isSyncing } = useApp();
   const { t } = useLanguage();
   const [animatedStats, setAnimatedStats] = useState({ found: 0, missing: 0, matches: 0, resolved: 0 });
 
@@ -83,6 +83,18 @@ export function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
+      <div className="dashboard-stats-header">
+        <h2>Network Insights</h2>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => fetchLatestData()} 
+          loading={isSyncing}
+          icon={<RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />}
+        >
+          {isSyncing ? 'Syncing...' : 'Refresh Data'}
+        </Button>
+      </div>
       <div className="dashboard-stats">
         <Link to="/reports?type=found" className="stat-link">
           <Card className="stat-card stat-found" hoverable>

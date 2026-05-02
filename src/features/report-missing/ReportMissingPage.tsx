@@ -90,7 +90,7 @@ export function ReportMissingPage() {
         reportedBy: user?.id || 'anonymous',
       };
       
-      addMissingReport(report);
+      await addMissingReport(report);
       setSubmitted(true);
       showToast({ type: 'success', title: 'Missing Pet Report Filed!', message: 'AI matching engine is now active.' });
     } catch (err) {

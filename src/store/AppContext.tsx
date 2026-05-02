@@ -122,6 +122,8 @@ interface AppContextType {
   addNotification: (notification: AppNotification) => Promise<void>;
   unreadCount: number;
   isLoading: boolean;
+  isSyncing: boolean;
+  fetchLatestData: () => Promise<void>;
   dataSource: 'supabase';
 }
 
@@ -132,6 +134,7 @@ const PERSISTENCE_KEY = 'findmyfur-state-cache';
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Load from localStorage first for instant UI
   useEffect(() => {
@@ -156,6 +159,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [state.foundReports, state.missingReports, state.matches, state.notifications]);
 
   const fetchLatestData = useCallback(async () => {
+    setIsSyncing(true);
     try {
       const [
         { data: missingReports },
@@ -180,6 +184,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (err) {
       console.error('Background sync failed', err);
+    } finally {
+      setIsSyncing(false);
     }
   }, []);
 
@@ -231,7 +237,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.from('found_reports').insert(report);
     if (error) {
       console.error('Supabase Found Report Insert Error:', error);
-      // Data is already in local state, but we should notify that cloud sync failed
+      throw error; // Throw so the UI can handle it
     } else {
       console.log('Found Report synced to cloud successfully');
     }
@@ -252,6 +258,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.from('missing_reports').insert(report);
     if (error) {
       console.error('Supabase Missing Report Insert Error:', error);
+      throw error;
     } else {
       console.log('Missing Report synced to cloud successfully');
     }
@@ -289,6 +296,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addNotification,
       unreadCount,
       isLoading,
+      isSyncing,
+      fetchLatestData,
       dataSource: 'supabase',
     }}>
       {children}

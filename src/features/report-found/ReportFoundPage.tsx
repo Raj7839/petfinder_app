@@ -127,7 +127,7 @@ export function ReportFoundPage() {
         reportedBy: user?.id || 'anonymous',
       };
       
-      addFoundReport(report);
+      await addFoundReport(report);
       setSubmitted(true);
       showToast({ type: 'success', title: 'Report Submitted!', message: 'AI matching engine is scanning for matches now.' });
     } catch (err) {

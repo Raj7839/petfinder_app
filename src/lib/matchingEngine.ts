@@ -54,11 +54,11 @@ function visualScore(found: FoundAnimalReport, missing: MissingAnimalReport): Si
     if (score > bestScore) bestScore = score;
   }
   
-  if (bestScore > 85) {
+  if (bestScore > 80) {
     return { score: bestScore, reason: `Strong visual similarity: ${bestScore}%`, hasData: true };
   }
-  if (bestScore > 70) {
-    return { score: bestScore, reason: `Moderate visual similarity`, hasData: true };
+  if (bestScore > 60) {
+    return { score: bestScore, reason: `Visual similarity detected`, hasData: true };
   }
   return { score: bestScore, hasData: true };
 }
@@ -173,8 +173,8 @@ export function computeMatchConfidence(
   return { confidence: Math.min(100, confidence), reasons };
 }
 
-const MATCH_THRESHOLD = 50;
-const NOTIFY_THRESHOLD = 85; // Set higher for animals
+const MATCH_THRESHOLD = 35; // Lowered for better testing visibility
+const NOTIFY_THRESHOLD = 75; // More notifications for users
 const MAX_MATCHES_PER_REPORT = 8;
 
 export interface MatchingResult {

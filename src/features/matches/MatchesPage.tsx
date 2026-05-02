@@ -129,7 +129,8 @@ const MatchCardItem = memo(({
 });
 
 export function MatchesPage() {
-  const { state, dispatch, addNotification } = useApp();
+  const { state, dispatch, addNotification, isLoading } = useApp();
+  const [isScanning, setIsScanning] = useState(false);
   const { isAdmin } = useAuth();
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
@@ -161,6 +162,24 @@ export function MatchesPage() {
     dispatch({ type: 'UPDATE_MATCH', payload: { id: matchId, updates: { status: 'dismissed' } } });
     showToast({ type: 'info', title: 'Match Dismissed', message: 'The match has been dismissed.' });
   };
+  
+  const runManualScan = async () => {
+    setIsScanning(true);
+    // Artificial delay for UX
+    await new Promise(r => setTimeout(r, 1500));
+    
+    const { runFullRematching } = await import('../../lib/matchingEngine');
+    const { matches, notifications } = runFullRematching(state.foundReports, state.missingReports, state.matches);
+    
+    if (matches.length > 0) {
+      for (const m of matches) dispatch({ type: 'ADD_MATCH', payload: m });
+      for (const n of notifications) dispatch({ type: 'ADD_NOTIFICATION', payload: n });
+      showToast({ type: 'success', title: 'Scan Complete', message: `Found ${matches.length} new potential matches!` });
+    } else {
+      showToast({ type: 'info', title: 'Scan Complete', message: 'No new matches found at this time.' });
+    }
+    setIsScanning(false);
+  };
 
   return (
     <div className="matches-page">
@@ -170,6 +189,15 @@ export function MatchesPage() {
           <p>AI-generated potential matches between found and missing pets.</p>
         </div>
         <div className="matches-stats-row">
+          <Button 
+            size="sm" 
+            variant="secondary" 
+            loading={isScanning} 
+            icon={<GitCompareArrows size={14} />}
+            onClick={runManualScan}
+          >
+            {isScanning ? 'Scanning...' : 'Run AI Scan'}
+          </Button>
           <div className="match-stat-pill"><Clock size={14} /> {state.matches.filter(m => m.status === 'pending').length} Pending</div>
           <div className="match-stat-pill match-stat-success"><CheckCircle size={14} /> {state.matches.filter(m => m.status === 'confirmed').length} Confirmed</div>
         </div>

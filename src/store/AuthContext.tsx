@@ -269,6 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { passwordHash, ...safeUser } = found;
     setUser(safeUser);
     localStorage.setItem(SESSION_KEY, found.id);
+    localStorage.removeItem('findmyfur-state-cache');
     resetActivityTimers();
     appendAudit('login_success', trimUser);
     return { success: true };
@@ -329,6 +330,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { passwordHash, ...safeUser } = newUser;
     setUser(safeUser);
     localStorage.setItem(SESSION_KEY, newUser.id);
+    localStorage.removeItem('findmyfur-state-cache');
     resetActivityTimers();
     appendAudit('register', trimUser, data.role || 'public');
     return { success: true };
@@ -386,6 +388,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSessionWarning(false);
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(ACTIVITY_KEY);
+    localStorage.removeItem('findmyfur-state-cache');
   }, [user]);
 
   const dismissSessionWarning = useCallback(() => {

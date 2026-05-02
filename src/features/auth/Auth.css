@@ -55,28 +55,28 @@
 
 .auth-logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-2);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .auth-logo h1 {
   font-family: var(--font-heading);
-  font-size: var(--text-3xl);
+  font-size: var(--text-4xl);
   font-weight: var(--weight-extrabold);
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  margin: 0;
 }
 
 .auth-tagline {
   text-align: center;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-style: italic;
-  color: var(--color-amber-400);
-  margin-bottom: var(--space-8);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-10);
   opacity: 0.8;
 }
 

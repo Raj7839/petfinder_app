@@ -15,7 +15,6 @@ const en = {
     name: 'findmyfur',
     fullName: 'findmyfur AI',
     tagline: "Your pet's way home, powered by AI.",
-    taglineHindi: 'जो खो गया, वो मिलेगा।',
   },
 
   // Navigation
@@ -177,12 +176,6 @@ const en = {
     match: 'match',
     confidence: 'confidence',
     justNow: 'Just now',
-  },
-
-  // Language toggle
-  lang: {
-    switchTo: 'हिंदी',
-    current: 'EN',
   },
 };
 

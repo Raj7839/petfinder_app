@@ -58,8 +58,7 @@ export function RegisterPage() {
           <BrandIcon size={36} />
           <h1>{t.brand.name}</h1>
         </div>
-        <p className="auth-tagline">{t.brand.taglineHindi}</p>
-        <p className="auth-tagline-sub">{t.brand.tagline}</p>
+        <p className="auth-tagline">{t.brand.tagline}</p>
 
         <h2 className="auth-title">Create Your Account</h2>
 

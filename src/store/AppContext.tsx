@@ -31,7 +31,8 @@ type Action =
   | { type: 'MARK_NOTIFICATION_READ'; payload: string }
   | { type: 'CLEAR_NOTIFICATIONS' }
   | { type: 'TOGGLE_SIDEBAR' }
-  | { type: 'LOAD_STATE'; payload: Partial<AppState> };
+  | { type: 'LOAD_STATE'; payload: Partial<AppState> }
+  | { type: 'MERGE_STATE'; payload: Partial<AppState> };
 
 const initialState: AppState = {
   foundReports: [],
@@ -98,6 +99,15 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
     case 'LOAD_STATE':
       return { ...state, ...action.payload };
+    case 'MERGE_STATE':
+      // Merge unique reports to avoid duplication but keep local-only data
+      return {
+        ...state,
+        foundReports: Array.from(new Map([...state.foundReports, ...(action.payload.foundReports || [])].map(r => [r.id, r])).values()),
+        missingReports: Array.from(new Map([...state.missingReports, ...(action.payload.missingReports || [])].map(r => [r.id, r])).values()),
+        matches: Array.from(new Map([...state.matches, ...(action.payload.matches || [])].map(m => [m.id, m])).values()),
+        notifications: Array.from(new Map([...state.notifications, ...(action.payload.notifications || [])].map(n => [n.id, n])).values()),
+      };
     default:
       return state;
   }
@@ -162,7 +172,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ]);
 
         dispatch({
-          type: 'LOAD_STATE',
+          type: 'MERGE_STATE',
           payload: {
             missingReports: missingReports || [],
             foundReports: foundReports || [],
@@ -170,6 +180,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             notifications: notifications || [],
           }
         });
+        console.log('Synced with Supabase: ', { missing: missingReports?.length, found: foundReports?.length });
       } catch (err) {
         console.error('Failed to load state from Supabase', err);
       } finally {

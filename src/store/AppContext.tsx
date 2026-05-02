@@ -123,7 +123,7 @@ interface AppContextType {
   unreadCount: number;
   isLoading: boolean;
   isSyncing: boolean;
-  fetchLatestData: () => Promise<void>;
+  fetchLatestData: (manual?: boolean) => Promise<void>;
   dataSource: 'supabase';
 }
 
@@ -158,8 +158,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [state.foundReports, state.missingReports, state.matches, state.notifications]);
 
-  const fetchLatestData = useCallback(async () => {
-    setIsSyncing(true);
+  const fetchLatestData = useCallback(async (manual = false) => {
+    if (manual) setIsSyncing(true);
     try {
       const [
         { data: missingReports },
@@ -185,7 +185,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Background sync failed', err);
     } finally {
-      setIsSyncing(false);
+      if (manual) setIsSyncing(false);
     }
   }, []);
 

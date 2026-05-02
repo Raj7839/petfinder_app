@@ -88,7 +88,7 @@ export function DashboardPage() {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => fetchLatestData()} 
+          onClick={() => fetchLatestData(true)} 
           loading={isSyncing}
           icon={<RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />}
         >

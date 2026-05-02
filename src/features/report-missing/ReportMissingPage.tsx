@@ -7,6 +7,7 @@ import { useToast } from '../../components/ui/Toast';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { generateId, fileToBase64 } from '../../utils/helpers';
 import { extractFeatures } from '../../lib/tfjs';
+import { uploadAnimalPhoto } from '../../lib/storage';
 import type { MissingAnimalReport } from '../../types';
 import '../report-found/ReportFound.css';
 

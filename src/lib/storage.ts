@@ -12,11 +12,18 @@ export async function uploadAnimalPhoto(fileOrBase64: File | string, fileName?: 
 
     if (typeof fileOrBase64 === 'string') {
       // Convert base64 to Blob
-      const res = await fetch(fileOrBase64);
-      body = await res.blob();
+      try {
+        const res = await fetch(fileOrBase64);
+        body = await res.blob();
+      } catch (e) {
+        console.error('Failed to convert base64 to blob:', e);
+        throw new Error('Image processing failed');
+      }
     } else {
       body = fileOrBase64;
     }
+
+    console.log(`Attempting upload to bucket "${BUCKET_NAME}" as "${name}"...`);
 
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
@@ -26,15 +33,19 @@ export async function uploadAnimalPhoto(fileOrBase64: File | string, fileName?: 
         upsert: false
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase Storage Upload Error:', error);
+      throw error;
+    }
 
     const { data: { publicUrl } } = supabase.storage
       .from(BUCKET_NAME)
       .getPublicUrl(data.path);
 
+    console.log('Upload successful! URL:', publicUrl);
     return publicUrl;
-  } catch (error) {
-    console.error('Error uploading photo to Supabase Storage:', error);
+  } catch (error: any) {
+    console.error('Error in uploadAnimalPhoto:', error.message || error);
     return null;
   }
 }

@@ -28,6 +28,7 @@ export function ReportFoundPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const geo = useGeolocation();
   const { addFoundReport } = useApp();
+  const { user } = useAuth();
   const { showToast } = useToast();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +124,7 @@ export function ReportFoundPage() {
         imageFeatures,
         status: 'pending',
         createdAt: new Date().toISOString(),
-        reportedBy: 'user-1',
+        reportedBy: user?.id || 'anonymous',
       };
       
       addFoundReport(report);

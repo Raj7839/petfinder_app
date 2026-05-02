@@ -215,7 +215,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addFoundReport = useCallback(async (report: FoundAnimalReport) => {
     dispatch({ type: 'ADD_FOUND_REPORT', payload: report });
-    await supabase.from('found_reports').insert(report).catch(console.error);
+    const { error } = await supabase.from('found_reports').insert(report);
+    if (error) {
+      console.error('Supabase Found Report Insert Error:', error);
+      // Data is already in local state, but we should notify that cloud sync failed
+    } else {
+      console.log('Found Report synced to cloud successfully');
+    }
 
     const { matches, notifications } = runMatchingForFoundReport(report, state.missingReports);
     for (const match of matches) {
@@ -230,7 +236,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addMissingReport = useCallback(async (report: MissingAnimalReport) => {
     dispatch({ type: 'ADD_MISSING_REPORT', payload: report });
-    await supabase.from('missing_reports').insert(report).catch(console.error);
+    const { error } = await supabase.from('missing_reports').insert(report);
+    if (error) {
+      console.error('Supabase Missing Report Insert Error:', error);
+    } else {
+      console.log('Missing Report synced to cloud successfully');
+    }
 
     const { matches, notifications } = runMatchingForMissingReport(report, state.foundReports);
     for (const match of matches) {

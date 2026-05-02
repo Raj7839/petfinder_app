@@ -25,6 +25,7 @@ export function ReportMissingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const geo = useGeolocation();
   const { addMissingReport } = useApp();
+  const { user } = useAuth();
   const { showToast } = useToast();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,7 +87,7 @@ export function ReportMissingPage() {
         imageFeatures,
         status: 'active',
         createdAt: new Date().toISOString(),
-        reportedBy: 'user-1',
+        reportedBy: user?.id || 'anonymous',
       };
       
       addMissingReport(report);

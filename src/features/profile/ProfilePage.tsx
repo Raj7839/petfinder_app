@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, SearchCheck, Bell, Shield, Trash2, Lock, Mail, User, LogOut, KeyRound, AlertTriangle } from 'lucide-react';
+import { Eye, SearchCheck, Bell, Shield, Trash2, Lock, Mail, User, LogOut, KeyRound, AlertTriangle, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -8,6 +8,7 @@ import { useApp } from '../../store/AppContext';
 import { useAuth } from '../../store/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { getPasswordStrength } from '../../utils/sanitize';
+import { PosterGenerator } from '../../components/PosterGenerator';
 import './Profile.css';
 
 export function ProfilePage() {
@@ -15,6 +16,7 @@ export function ProfilePage() {
   const { user, logout, isAdmin, changePassword } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [selectedPoster, setSelectedPoster] = useState<any>(null);
 
   // Change password state
   const [oldPw, setOldPw] = useState('');

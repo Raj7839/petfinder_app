@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { GitCompareArrows, CheckCircle, XCircle, Clock, MapPin, Phone, ChevronDown, AlertTriangle, Info } from 'lucide-react';
+import { GitCompareArrows, CheckCircle, XCircle, Clock, MapPin, Phone, ChevronDown, AlertTriangle, Info, Printer } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge, StatusBadge } from '../../components/ui/Badge';
@@ -7,6 +7,7 @@ import { useApp } from '../../store/AppContext';
 import { useAuth } from '../../store/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { useSearchParams } from 'react-router-dom';
+import { PosterGenerator } from '../../components/PosterGenerator';
 import { formatDate, getConfidenceColor, getConfidenceLabel, calculateDistance, formatDistance } from '../../utils/helpers';
 import './Matches.css';
 
@@ -18,6 +19,7 @@ export function MatchesPage() {
   const initialFilter = searchParams.get('status') as 'pending' | 'confirmed' | 'dismissed' | null;
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'dismissed'>(initialFilter || 'all');
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
+  const [selectedPoster, setSelectedPoster] = useState<any>(null);
 
   const filteredMatches = useMemo(() => {
     const sorted = [...state.matches].sort((a, b) => b.confidence - a.confidence);

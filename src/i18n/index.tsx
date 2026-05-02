@@ -76,6 +76,13 @@ const en = {
     stayLoggedIn: 'Stay Logged In',
     passwordsMatch: '✓ Passwords match',
     passwordsMismatch: 'Passwords do not match',
+    forgotPassword: 'Forgot Password?',
+    recoveryTitle: 'Account Recovery',
+    recoverySubtitle: 'Enter your verified email and set a new password.',
+    emailForRecovery: 'Registered Email',
+    resetPasswordBtn: 'Reset Password',
+    resetSuccess: 'Password reset successful! You can now log in.',
+    backToLogin: 'Back to Login',
   },
 
   // Dashboard

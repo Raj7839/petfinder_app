@@ -1,18 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Clock, ShieldAlert } from 'lucide-react';
+import { AlertCircle, Clock, ShieldAlert, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { PetfinderIcon } from '../../components/ui/PetfinderIcon';
 import { useAuth } from '../../store/AuthContext';
+import { useLanguage } from '../../i18n';
 import './Auth.css';
 
 export function LoginPage() {
-  const { login, loginAsGuest, isAuthenticated, sessionWarning, dismissSessionWarning } = useAuth();
+  const { login, loginAsGuest, resetPassword, isAuthenticated, sessionWarning, dismissSessionWarning } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
+  
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [lockedSeconds, setLockedSeconds] = useState(0);
+  const [isResetMode, setIsResetMode] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -36,15 +42,26 @@ export function LoginPage() {
     e.preventDefault();
     if (lockedSeconds > 0) return;
     setError('');
+    setSuccess('');
     setLoading(true);
 
-    const result = await login(username.trim(), password);
-    if (!result.success) {
-      setError(result.error || 'Login failed.');
-      if (result.lockedSeconds) setLockedSeconds(result.lockedSeconds);
+    if (isResetMode) {
+      const result = await resetPassword(email.trim(), password);
+      if (result.success) {
+        setSuccess(t.auth.resetSuccess);
+        setIsResetMode(false);
+      } else {
+        setError(result.error || 'Reset failed.');
+      }
+    } else {
+      const result = await login(username.trim(), password);
+      if (!result.success) {
+        setError(result.error || 'Login failed.');
+        if (result.lockedSeconds) setLockedSeconds(result.lockedSeconds);
+      }
     }
     setLoading(false);
-  }, [login, username, password, lockedSeconds]);
+  }, [login, resetPassword, username, password, email, lockedSeconds, isResetMode, t]);
 
   const handleGuestLogin = useCallback(async () => {
     setLoading(true);
@@ -68,7 +85,7 @@ export function LoginPage() {
         </div>
         <p className="auth-tagline">Find Lost. Bring Home. AI-Powered.</p>
 
-        {/* Session timeout warning — shown if they were auto-redirected */}
+        {/* Session timeout warning */}
         {sessionWarning && (
           <div className="auth-session-warning">
             <Clock size={16} />
@@ -77,39 +94,87 @@ export function LoginPage() {
           </div>
         )}
 
-        <h2 className="auth-title">Welcome Back</h2>
+        <div className="auth-header-row">
+          {isResetMode && (
+            <button className="auth-back-btn" onClick={() => { setIsResetMode(false); setError(''); setSuccess(''); }}>
+              <ChevronLeft size={18} />
+            </button>
+          )}
+          <h2 className="auth-title">
+            {isResetMode ? t.auth.recoveryTitle : t.auth.welcomeBack}
+          </h2>
+        </div>
+        
+        {isResetMode && <p className="auth-subtitle">{t.auth.recoverySubtitle}</p>}
 
         <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="auth-field">
-            <label htmlFor="login-username">Username</label>
-            <input
-              id="login-username"
-              type="text"
-              className="auth-input"
-              placeholder="Enter your username"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              autoComplete="username"
-              autoFocus
-              required
-              disabled={lockedSeconds > 0}
-            />
-          </div>
+          {isResetMode ? (
+            <>
+              <div className="auth-field">
+                <label htmlFor="reset-email">{t.auth.emailForRecovery}</label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  className="auth-input"
+                  placeholder={t.auth.emailPlaceholder}
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="auth-field">
+                <label htmlFor="reset-password">{t.auth.confirmNewPassword}</label>
+                <input
+                  id="reset-password"
+                  type="password"
+                  className="auth-input"
+                  placeholder={t.auth.newPasswordPlaceholder}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="auth-field">
+                <label htmlFor="login-username">{t.auth.username}</label>
+                <input
+                  id="login-username"
+                  type="text"
+                  className="auth-input"
+                  placeholder={t.auth.usernamePlaceholder}
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  autoComplete="username"
+                  required
+                  disabled={lockedSeconds > 0 || loading}
+                />
+              </div>
 
-          <div className="auth-field">
-            <label htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              type="password"
-              className="auth-input"
-              placeholder="Enter your password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              disabled={lockedSeconds > 0}
-            />
-          </div>
+              <div className="auth-field">
+                <div className="auth-label-row">
+                  <label htmlFor="login-password">{t.auth.password}</label>
+                  <button type="button" className="auth-forgot-link" onClick={() => setIsResetMode(true)}>
+                    {t.auth.forgotPassword}
+                  </button>
+                </div>
+                <input
+                  id="login-password"
+                  type="password"
+                  className="auth-input"
+                  placeholder={t.auth.passwordPlaceholder}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  disabled={lockedSeconds > 0 || loading}
+                />
+              </div>
+            </>
+          )}
 
           {error && (
             <div className={`auth-error ${lockedSeconds > 0 ? 'auth-error-locked' : ''}`}>
@@ -121,35 +186,51 @@ export function LoginPage() {
             </div>
           )}
 
+          {success && (
+            <div className="auth-success-alert">
+              <CheckCircle2 size={16} />
+              <span>{success}</span>
+            </div>
+          )}
+
           <button
             type="submit"
             className="auth-submit"
-            disabled={loading || !username || !password || lockedSeconds > 0}
+            disabled={loading || (isResetMode ? (!email || !password) : (!username || !password)) || lockedSeconds > 0}
           >
             {loading && <span className="auth-spinner" />}
             {lockedSeconds > 0
-              ? `Locked — ${formatLockTime(lockedSeconds)}`
-              : loading ? 'Signing In...' : 'Sign In'}
+              ? `${t.auth.lockedPrefix} ${formatLockTime(lockedSeconds)}`
+              : loading ? (isResetMode ? 'Resetting...' : t.auth.signingIn) : (isResetMode ? t.auth.resetPasswordBtn : t.auth.signIn)}
           </button>
         </form>
 
         <p className="auth-switch">
-          Don't have an account?{' '}
-          <Link to="/register" className="auth-switch-link">Create Account</Link>
+          {isResetMode ? (
+            <button className="auth-switch-link-btn" onClick={() => setIsResetMode(false)}>{t.auth.backToLogin}</button>
+          ) : (
+            <>
+              {t.auth.noAccount}{' '}
+              <Link to="/register" className="auth-switch-link">{t.auth.createAccountLink}</Link>
+            </>
+          )}
         </p>
 
-        <div className="auth-divider">
-          <span>OR</span>
-        </div>
-
-        <button 
-          className="auth-guest-btn" 
-          onClick={handleGuestLogin}
-          disabled={loading || lockedSeconds > 0}
-          type="button"
-        >
-          🚨 Quick Report Found Pet
-        </button>
+        {!isResetMode && (
+          <>
+            <div className="auth-divider">
+              <span>OR</span>
+            </div>
+            <button 
+              className="auth-guest-btn" 
+              onClick={handleGuestLogin}
+              disabled={loading || lockedSeconds > 0}
+              type="button"
+            >
+              🚨 Quick Report Found Pet
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

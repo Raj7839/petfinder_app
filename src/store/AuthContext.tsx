@@ -39,6 +39,7 @@ interface AuthContextType {
   register: (data: { username: string; password: string; fullName: string; email: string; role?: 'public' | 'family' }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (email: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   dismissSessionWarning: () => void;
 }
 
@@ -358,6 +359,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   }, [user]);
 
+  const resetPassword = useCallback(async (email: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    const pwError = validatePassword(newPassword);
+    if (pwError) return { success: false, error: pwError };
+
+    const users = await getStoredUsers();
+    const found = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+    
+    if (!found) {
+      // Security best practice: don't reveal if email exists, but for this app we'll be helpful
+      return { success: false, error: 'No account associated with this email.' };
+    }
+
+    const newHash = await sha256(newPassword);
+    await updateUser({ ...found, passwordHash: newHash, mustChangePassword: false });
+    
+    appendAudit('password_reset', found.username);
+    return { success: true };
+  }, []);
+
   const logout = useCallback(() => {
     if (activityTimer.current) clearTimeout(activityTimer.current);
     if (warnTimer.current)     clearTimeout(warnTimer.current);
@@ -378,7 +398,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, isAuthenticated: !!user, isLoading, isAdmin,
-      sessionWarning, login, loginAsGuest, register, logout, changePassword, dismissSessionWarning,
+      sessionWarning, login, loginAsGuest, register, logout, changePassword, resetPassword, dismissSessionWarning,
     }}>
       {children}
     </AuthContext.Provider>

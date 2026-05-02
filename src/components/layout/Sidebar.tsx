@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Scan, Eye, SearchCheck, Map, GitCompareArrows, ShieldCheck, User, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, Scan, Eye, SearchCheck, Map, Grid, GitCompareArrows, ShieldCheck, User, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../store/AuthContext';
 import { useLanguage } from '../../i18n';
 import './Sidebar.css';

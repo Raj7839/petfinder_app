@@ -96,5 +96,19 @@
 .custom-marker { background: transparent !important; border: none !important; }
 
 @media (max-width: 768px) {
-  .map-page { height: calc(100vh - var(--header-height) - var(--mobile-nav-height)); border-radius: 0; }
+  .map-page { 
+    height: calc(100vh - var(--header-height) - var(--mobile-nav-height)); 
+    border-radius: 0;
+    margin: calc(var(--space-3) * -1); /* Pull out of inner padding */
+    width: 100vw;
+    border: none;
+  }
+  
+  .map-controls {
+    top: var(--space-2);
+  }
+  
+  .map-filter-panel {
+    top: 48px;
+  }
 }

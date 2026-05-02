@@ -199,10 +199,26 @@
 .report-success p { color: var(--color-text-secondary); max-width: 400px; margin: 0 auto var(--space-6); }
 
 @media (max-width: 640px) {
-  .report-steps { flex-direction: column; }
+  .report-steps { 
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: var(--space-2);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-4);
+  }
+  .step { 
+    padding: var(--space-1);
+    background: none;
+    border: none;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .step-label { display: none; }
   .form-grid { grid-template-columns: 1fr; }
-  .step-label { display: inline; }
   .photo-actions-row { flex-direction: column; }
+  .report-header h1 { font-size: var(--text-xl); }
 }
 
 /* Camera-first photo capture buttons */

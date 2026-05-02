@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { GitCompareArrows, CheckCircle, XCircle, Clock, MapPin, Phone, ChevronDown, AlertTriangle, Info, Printer } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -10,6 +10,123 @@ import { useSearchParams } from 'react-router-dom';
 import { PosterGenerator } from '../../components/PosterGenerator';
 import { formatDate, getConfidenceColor, getConfidenceLabel, calculateDistance, formatDistance } from '../../utils/helpers';
 import './Matches.css';
+
+const MatchCardItem = memo(({ 
+  match, found, missing, isExpanded, onToggle, onConfirm, onDismiss, onPrint, isAdmin 
+}: any) => {
+  let distStr = '';
+  if (found && missing && found.location.lat && missing.lastSeen.location.lat) {
+    const km = calculateDistance(found.location.lat, found.location.lng, missing.lastSeen.location.lat, missing.lastSeen.location.lng);
+    distStr = formatDistance(km);
+  }
+
+  return (
+    <Card className={`match-card ${isExpanded ? 'match-expanded' : ''}`} padding="none">
+      <div className="match-card-main" onClick={onToggle}>
+        <div className="match-comparison">
+          <div className="match-person">
+            <div className="match-person-photo">
+              {found?.photos[0] && <img src={found.photos[0]} alt="Found animal" loading="lazy" />}
+            </div>
+            <div className="match-person-info">
+              <Badge variant="blue" size="sm">Found</Badge>
+              <span className="match-person-detail">
+                {[found?.details.type, found?.details.primaryColor].filter(Boolean).join(', ') || 'Unknown'}
+              </span>
+              <span className="match-person-loc"><MapPin size={12} />{found?.location.address || 'GPS'}</span>
+            </div>
+          </div>
+
+          <div className="match-vs">
+            <div className="match-confidence-circle" style={{ borderColor: getConfidenceColor(match.confidence) }}>
+              <span className="match-conf-num">{match.confidence}%</span>
+            </div>
+            <span className="match-conf-label">{getConfidenceLabel(match.confidence)}</span>
+            {distStr && <span className="match-dist-label">{distStr} apart</span>}
+          </div>
+
+          <div className="match-person">
+            <div className="match-person-photo">
+              {missing?.photos[0] && <img src={missing.photos[0]} alt="Missing pet" loading="lazy" />}
+            </div>
+            <div className="match-person-info">
+              <Badge variant="amber" size="sm">Lost Pet</Badge>
+              <span className="match-person-name">{missing?.identity.name || 'Unknown'}</span>
+              <span className="match-person-loc"><MapPin size={12} />{missing?.lastSeen.location.address || 'GPS'}</span>
+            </div>
+          </div>
+        </div>
+
+        {match.matchReasons && match.matchReasons.length > 0 && (
+          <div className="match-reasons-summary">
+            <Info size={14} />
+            <span>{match.matchReasons.slice(0, 3).join(' • ')}</span>
+          </div>
+        )}
+
+        <div className="match-card-meta">
+          <StatusBadge status={match.status} />
+          <span className="match-time">{formatDate(match.timestamp)}</span>
+          <ChevronDown size={16} className={`match-expand-icon ${isExpanded ? 'rotated' : ''}`} />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="match-details animate-fade-in">
+          {match.matchReasons && match.matchReasons.length > 0 && (
+            <div className="match-reasons-full">
+              <h4><Info size={16} /> Why This Matched</h4>
+              <ul>
+                {match.matchReasons.map((reason: string, ri: number) => (
+                  <li key={ri} className="match-reason-item">{reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="match-detail-grid">
+            <div className="match-detail-col">
+              <h4>Found Animal Details</h4>
+              {found?.details.type && <p><strong>Type:</strong> {found.details.type}</p>}
+              {found?.details.breed && <p><strong>Breed:</strong> {found.details.breed}</p>}
+              {found?.details.primaryColor && <p><strong>Color:</strong> {found.details.primaryColor}</p>}
+              {found?.details.behavior && <p><strong>Behavior:</strong> {found.details.behavior}</p>}
+              {found?.details.notes && <p><strong>Notes:</strong> {found.details.notes}</p>}
+              <p><strong>Location:</strong> {found?.location.address || 'GPS'}</p>
+              <p><strong>Reported:</strong> {formatDate(found?.createdAt || '')}</p>
+            </div>
+            <div className="match-detail-col">
+              <h4>Missing Pet Details</h4>
+              {missing?.identity.name && <p><strong>Name:</strong> {missing.identity.name}</p>}
+              {missing?.identity.type && <p><strong>Type:</strong> {missing.identity.type}</p>}
+              {missing?.identity.breed && <p><strong>Breed:</strong> {missing.identity.breed}</p>}
+              {missing?.identity.primaryColor && <p><strong>Color:</strong> {missing.identity.primaryColor}</p>}
+              {missing?.identity.distinguishingFeatures && <p><strong>Features:</strong> {missing.identity.distinguishingFeatures}</p>}
+              <p><strong>Last Seen:</strong> {missing?.lastSeen.location.address || 'GPS'}</p>
+              {missing?.lastSeen.circumstances && <p><strong>Circumstances:</strong> {missing.lastSeen.circumstances}</p>}
+              {missing?.contact && (
+                <p className="match-contact"><Phone size={14} /> <strong>Contact:</strong> {missing.contact.name} - {missing.contact.phone}</p>
+              )}
+              <Button size="sm" variant="secondary" className="poster-btn-inline" icon={<Printer size={14} />} onClick={() => onPrint(missing)}>
+                Print Missing Poster
+              </Button>
+            </div>
+          </div>
+          {match.status === 'pending' && isAdmin && (
+            <div className="match-actions">
+              <Button variant="success" icon={<CheckCircle size={18} />} onClick={(e) => { e.stopPropagation(); onConfirm(match.id); }}>
+                Confirm Match
+              </Button>
+              <Button variant="danger" icon={<XCircle size={18} />} onClick={(e) => { e.stopPropagation(); onDismiss(match.id); }}>
+                Dismiss
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+});
 
 export function MatchesPage() {
   const { state, dispatch, addNotification } = useApp();
@@ -88,132 +205,22 @@ export function MatchesPage() {
             <p>The AI engine is continuously scanning.</p>
           </Card>
         )}
-        {filteredMatches.map((match, i) => {
-          const found = state.foundReports.find(r => r.id === match.foundReportId);
-          const missing = state.missingReports.find(r => r.id === match.missingReportId);
-          const isExpanded = expandedMatch === match.id;
-
-          let distStr = '';
-          if (found && missing && found.location.lat && missing.lastSeen.location.lat) {
-            const km = calculateDistance(found.location.lat, found.location.lng, missing.lastSeen.location.lat, missing.lastSeen.location.lng);
-            distStr = formatDistance(km);
-          }
-
-          return (
-            <Card key={match.id} className={`match-card ${isExpanded ? 'match-expanded' : ''}`} padding="none" style={{ animationDelay: `${i * 80}ms` }}>
-              <div className="match-card-main" onClick={() => setExpandedMatch(isExpanded ? null : match.id)}>
-                <div className="match-comparison">
-                  <div className="match-person">
-                    <div className="match-person-photo">
-                      {found?.photos[0] && <img src={found.photos[0]} alt="Found animal" />}
-                    </div>
-                    <div className="match-person-info">
-                      <Badge variant="blue" size="sm">Found</Badge>
-                      <span className="match-person-detail">
-                        {[found?.details.type, found?.details.primaryColor].filter(Boolean).join(', ') || 'Unknown'}
-                      </span>
-                      <span className="match-person-loc"><MapPin size={12} />{found?.location.address || 'GPS'}</span>
-                    </div>
-                  </div>
-
-                  <div className="match-vs">
-                    <div className="match-confidence-circle" style={{ borderColor: getConfidenceColor(match.confidence) }}>
-                      <span className="match-conf-num">{match.confidence}%</span>
-                    </div>
-                    <span className="match-conf-label">{getConfidenceLabel(match.confidence)}</span>
-                    {distStr && <span className="match-dist-label">{distStr} apart</span>}
-                  </div>
-
-                  <div className="match-person">
-                    <div className="match-person-photo">
-                      {missing?.photos[0] && <img src={missing.photos[0]} alt="Missing pet" />}
-                    </div>
-                    <div className="match-person-info">
-                      <Badge variant="amber" size="sm">Lost Pet</Badge>
-                      <span className="match-person-name">{missing?.identity.name || 'Unknown'}</span>
-                      <span className="match-person-loc"><MapPin size={12} />{missing?.lastSeen.location.address || 'GPS'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {match.matchReasons && match.matchReasons.length > 0 && (
-                  <div className="match-reasons-summary">
-                    <Info size={14} />
-                    <span>{match.matchReasons.slice(0, 3).join(' • ')}</span>
-                  </div>
-                )}
-
-                <div className="match-card-meta">
-                  <StatusBadge status={match.status} />
-                  <span className="match-time">{formatDate(match.timestamp)}</span>
-                  <ChevronDown size={16} className={`match-expand-icon ${isExpanded ? 'rotated' : ''}`} />
-                </div>
-              </div>
-
-              {isExpanded && (
-                <div className="match-details animate-fade-in">
-                  {match.matchReasons && match.matchReasons.length > 0 && (
-                    <div className="match-reasons-full">
-                      <h4><Info size={16} /> Why This Matched</h4>
-                      <ul>
-                        {match.matchReasons.map((reason, ri) => (
-                          <li key={ri} className="match-reason-item">{reason}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="match-detail-grid">
-                    <div className="match-detail-col">
-                      <h4>Found Animal Details</h4>
-                      {found?.details.type && <p><strong>Type:</strong> {found.details.type}</p>}
-                      {found?.details.breed && <p><strong>Breed:</strong> {found.details.breed}</p>}
-                      {found?.details.primaryColor && <p><strong>Color:</strong> {found.details.primaryColor}</p>}
-                      {found?.details.behavior && <p><strong>Behavior:</strong> {found.details.behavior}</p>}
-                      {found?.details.notes && <p><strong>Notes:</strong> {found.details.notes}</p>}
-                      <p><strong>Location:</strong> {found?.location.address || 'GPS'}</p>
-                      <p><strong>Reported:</strong> {formatDate(found?.createdAt || '')}</p>
-                    </div>
-                    <div className="match-detail-col">
-                      <h4>Missing Pet Details</h4>
-                      {missing?.identity.name && <p><strong>Name:</strong> {missing.identity.name}</p>}
-                      {missing?.identity.type && <p><strong>Type:</strong> {missing.identity.type}</p>}
-                      {missing?.identity.breed && <p><strong>Breed:</strong> {missing.identity.breed}</p>}
-                      {missing?.identity.primaryColor && <p><strong>Color:</strong> {missing.identity.primaryColor}</p>}
-                      {missing?.identity.distinguishingFeatures && <p><strong>Features:</strong> {missing.identity.distinguishingFeatures}</p>}
-                      <p><strong>Last Seen:</strong> {missing?.lastSeen.location.address || 'GPS'}</p>
-                      {missing?.lastSeen.circumstances && <p><strong>Circumstances:</strong> {missing.lastSeen.circumstances}</p>}
-                      {missing?.contact && (
-                        <p className="match-contact"><Phone size={14} /> <strong>Contact:</strong> {missing.contact.name} - {missing.contact.phone}</p>
-                      )}
-                      <Button size="sm" variant="secondary" className="poster-btn-inline" icon={<Printer size={14} />} onClick={() => setSelectedPoster(missing)}>
-                        Print Missing Poster
-                      </Button>
-                    </div>
-                  </div>
-                  {selectedPoster && <PosterGenerator report={selectedPoster} onClose={() => setSelectedPoster(null)} />}
-                  {match.status === 'pending' && isAdmin && (
-                    <div className="match-actions">
-                      <Button variant="success" icon={<CheckCircle size={18} />} onClick={(e) => { e.stopPropagation(); handleConfirm(match.id); }}>
-                        Confirm Match
-                      </Button>
-                      <Button variant="danger" icon={<XCircle size={18} />} onClick={(e) => { e.stopPropagation(); handleDismiss(match.id); }}>
-                        Dismiss
-                      </Button>
-                    </div>
-                  )}
-                  {match.status === 'pending' && !isAdmin && (
-                    <div className="match-actions-info">
-                      <Info size={14} />
-                      <span>Only an admin can confirm or dismiss matches.</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </Card>
-          );
-        })}
+        {filteredMatches.map((match) => (
+          <MatchCardItem
+            key={match.id}
+            match={match}
+            found={state.foundReports.find(r => r.id === match.foundReportId)}
+            missing={state.missingReports.find(r => r.id === match.missingReportId)}
+            isExpanded={expandedMatch === match.id}
+            onToggle={() => setExpandedMatch(expandedMatch === match.id ? null : match.id)}
+            onConfirm={handleConfirm}
+            onDismiss={handleDismiss}
+            onPrint={setSelectedPoster}
+            isAdmin={isAdmin}
+          />
+        ))}
       </div>
+      {selectedPoster && <PosterGenerator report={selectedPoster} onClose={() => setSelectedPoster(null)} />}
     </div>
   );
 }

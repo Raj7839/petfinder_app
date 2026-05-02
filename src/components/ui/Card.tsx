@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import './Card.css';
 
 interface CardProps {
@@ -11,7 +11,7 @@ interface CardProps {
   style?: React.CSSProperties;
 }
 
-export function Card({ children, className = '', variant = 'default', hoverable = false, onClick, padding = 'md', style }: CardProps) {
+export const Card = memo(({ children, className = '', variant = 'default', hoverable = false, onClick, padding = 'md', style }: CardProps) => {
   return (
     <div
       className={`card card-${variant} card-pad-${padding} ${hoverable ? 'card-hoverable' : ''} ${onClick ? 'card-clickable' : ''} ${className}`}
@@ -23,16 +23,16 @@ export function Card({ children, className = '', variant = 'default', hoverable 
       {children}
     </div>
   );
-}
+});
 
-export function CardHeader({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export const CardHeader = memo(({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
   return <div className={`card-header ${className}`}>{children}</div>;
-}
+});
 
-export function CardBody({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export const CardBody = memo(({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
   return <div className={`card-body ${className}`}>{children}</div>;
-}
+});
 
-export function CardFooter({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export const CardFooter = memo(({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
   return <div className={`card-footer ${className}`}>{children}</div>;
-}
+});

@@ -4,18 +4,36 @@ import { AuthProvider, useAuth } from './store/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import { LanguageProvider } from './i18n';
 import { PageShell } from './components/layout/PageShell';
-import { DashboardPage } from './features/dashboard/DashboardPage';
-import { ReportFoundPage } from './features/report-found/ReportFoundPage';
-import { ReportMissingPage } from './features/report-missing/ReportMissingPage';
-import { MapViewPage } from './features/map-view/MapViewPage';
-import { MatchesPage } from './features/matches/MatchesPage';
-import { AdminPage } from './features/admin/AdminPage';
-import { ProfilePage } from './features/profile/ProfilePage';
-import { QuickScanPage } from './features/quick-scan/QuickScanPage';
-import { LoginPage } from './features/auth/LoginPage';
-import { RegisterPage } from './features/auth/RegisterPage';
 import { loadModel } from './lib/tfjs';
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
+
+// Lazy loaded components
+const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage').then(module => ({ default: module.DashboardPage })));
+const ReportFoundPage = lazy(() => import('./features/report-found/ReportFoundPage').then(module => ({ default: module.ReportFoundPage })));
+const ReportMissingPage = lazy(() => import('./features/report-missing/ReportMissingPage').then(module => ({ default: module.ReportMissingPage })));
+const MapViewPage = lazy(() => import('./features/map-view/MapViewPage').then(module => ({ default: module.MapViewPage })));
+const MatchesPage = lazy(() => import('./features/matches/MatchesPage').then(module => ({ default: module.MatchesPage })));
+const AdminPage = lazy(() => import('./features/admin/AdminPage').then(module => ({ default: module.AdminPage })));
+const ProfilePage = lazy(() => import('./features/profile/ProfilePage').then(module => ({ default: module.ProfilePage })));
+const QuickScanPage = lazy(() => import('./features/quick-scan/QuickScanPage').then(module => ({ default: module.QuickScanPage })));
+const LoginPage = lazy(() => import('./features/auth/LoginPage').then(module => ({ default: module.LoginPage })));
+const RegisterPage = lazy(() => import('./features/auth/RegisterPage').then(module => ({ default: module.RegisterPage })));
+
+// Loading component
+function LoadingScreen() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      height: '100vh', background: 'var(--color-bg-primary)',
+      color: 'var(--color-text-secondary)', fontFamily: 'Inter, sans-serif',
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div className="spinner" />
+        <p>Optimizing...</p>
+      </div>
+    </div>
+  );
+}
 
 
 // Role guard — redirects unauthorized users to dashboard
@@ -98,11 +116,13 @@ export default function App() {
     <LanguageProvider>
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/*" element={<ProtectedRoutes />} />
-          </Routes>
+          <Suspense fallback={<LoadingScreen />}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/*" element={<ProtectedRoutes />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </LanguageProvider>

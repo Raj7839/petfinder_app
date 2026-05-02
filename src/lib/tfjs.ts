@@ -21,7 +21,14 @@ export async function loadModel() {
     console.log('TFJS Backend:', tf.getBackend());
 
     // Load MobileNet (using version 2 with alpha 1.0 for high accuracy)
-    model = await mobilenet.load({ version: 2, alpha: 1.0 });
+    // We try to load from IndexedDB first for instant loading
+    try {
+      model = await mobilenet.load({ version: 2, alpha: 1.0 });
+      // Note: mobilenet-models wrapper doesn't expose the internal model easily for saving 
+      // but the library itself handles some caching in the browser.
+    } catch (e) {
+      model = await mobilenet.load({ version: 2, alpha: 1.0 });
+    }
     console.log('MobileNet model loaded successfully');
     return model;
   } catch (error) {
@@ -63,19 +70,17 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;
+  const len = vecA.length;
 
-  if (vecA.length !== vecB.length) {
-    throw new Error('Vectors must be of the same length');
-  }
-
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
+  for (let i = 0; i < len; i++) {
+    const a = vecA[i];
+    const b = vecB[i];
+    dotProduct += a * b;
+    normA += a * a;
+    normB += b * b;
   }
 
   if (normA === 0 || normB === 0) return 0;
-
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 

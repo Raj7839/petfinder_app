@@ -209,8 +209,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Initial fetch
     fetchLatestData().finally(() => setIsLoading(false));
     
+    // Periodical matching check
     const timer = setInterval(runRematching, REMATCH_INTERVAL_MS);
-    return () => clearInterval(timer);
+
+    // REAL-TIME SUBSCRIPTIONS for multi-device consistency
+    const channels = [
+      supabase.channel('found_reports_changes').on('postgres_changes', { event: '*', table: 'found_reports', schema: 'public' }, () => fetchLatestData()).subscribe(),
+      supabase.channel('missing_reports_changes').on('postgres_changes', { event: '*', table: 'missing_reports', schema: 'public' }, () => fetchLatestData()).subscribe(),
+      supabase.channel('matches_changes').on('postgres_changes', { event: '*', table: 'matches', schema: 'public' }, () => fetchLatestData()).subscribe(),
+      supabase.channel('notifications_changes').on('postgres_changes', { event: '*', table: 'notifications', schema: 'public' }, () => fetchLatestData()).subscribe(),
+    ];
+
+    return () => {
+      clearInterval(timer);
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
   }, [runRematching, fetchLatestData]);
 
   const addFoundReport = useCallback(async (report: FoundAnimalReport) => {

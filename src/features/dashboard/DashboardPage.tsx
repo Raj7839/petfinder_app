@@ -84,7 +84,7 @@ export function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="dashboard-stats">
-        <Link to="/map?type=found" className="stat-link">
+        <Link to="/reports?type=found" className="stat-link">
           <Card className="stat-card stat-found" hoverable>
             <div className="stat-icon-wrap stat-icon-blue"><Eye size={22} /></div>
             <div className="stat-info">
@@ -94,7 +94,7 @@ export function DashboardPage() {
             <TrendingUp size={16} className="stat-trend" />
           </Card>
         </Link>
-        <Link to="/map?type=missing" className="stat-link">
+        <Link to="/reports?type=missing" className="stat-link">
           <Card className="stat-card stat-missing" hoverable>
             <div className="stat-icon-wrap stat-icon-amber"><SearchCheck size={22} /></div>
             <div className="stat-info">

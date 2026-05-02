@@ -23,6 +23,7 @@ export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
       ? [{ path: '/report-missing', icon: SearchCheck, label: t.nav.reportMissing }]
       : []),
     { path: '/map', icon: Map, label: t.nav.mapView },
+    { path: '/reports', icon: Grid, label: t.nav.reports || 'Reports' },
     { path: '/matches', icon: GitCompareArrows, label: t.nav.matches },
     ...(isAdmin
       ? [{ path: '/admin', icon: ShieldCheck, label: t.nav.admin }]

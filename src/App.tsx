@@ -18,6 +18,7 @@ const ProfilePage = lazy(() => import('./features/profile/ProfilePage').then(mod
 const QuickScanPage = lazy(() => import('./features/quick-scan/QuickScanPage').then(module => ({ default: module.QuickScanPage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage').then(module => ({ default: module.LoginPage })));
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage').then(module => ({ default: module.RegisterPage })));
+const ReportsPage = lazy(() => import('./features/reports/ReportsPage').then(module => ({ default: module.ReportsPage })));
 
 // Loading component
 function LoadingScreen() {
@@ -84,6 +85,7 @@ function ProtectedRoutes() {
             <Route path="/report-found" element={<ReportFoundPage />} />
             <Route path="/map" element={<MapViewPage />} />
             <Route path="/matches" element={<MatchesPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
 
             {/* Family + Admin only */}

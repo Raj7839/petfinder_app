@@ -24,6 +24,7 @@ const en = {
     reportFound: 'Report Found',
     reportMissing: 'Report Missing',
     mapView: 'Map View',
+    reports: 'Reports',
     matches: 'Matches',
     admin: 'Admin',
     profile: 'Profile',
@@ -44,6 +45,19 @@ const en = {
     matchCenter: 'Match Center',
     adminPanel: 'Admin Panel',
     profile: 'Profile',
+  },
+
+  // Reports Gallery
+  reports: {
+    title: 'Pet Reports',
+    subtitle: 'Browse all active found and missing pet reports in your area.',
+    searchPlaceholder: 'Search by breed, color, or location...',
+    all: 'All Pets',
+    found: 'Found Animals',
+    missing: 'Missing Pets',
+    noResults: 'No reports match your search criteria.',
+    viewMap: 'View on Map',
+    details: 'View Details',
   },
 
   // Auth

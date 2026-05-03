@@ -2,6 +2,31 @@ import * as tf from '@tensorflow/tfjs';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 
 let model: mobilenet.MobileNet | null = null;
+let aiWorker: Worker | null = null;
+const workerCallbacks = new Map<string, { resolve: (val: any) => void, reject: (err: any) => void }>();
+
+function getWorker() {
+  if (aiWorker) return aiWorker;
+  
+  // Create worker using Vite's URL constructor pattern
+  aiWorker = new Worker(new URL('./aiWorker.ts', import.meta.url), { type: 'module' });
+  
+  aiWorker.onmessage = (e) => {
+    const { type, payload, id } = e.data;
+    const callbacks = workerCallbacks.get(id);
+    
+    if (type === 'FEATURES_EXTRACTED') {
+      callbacks?.resolve(payload);
+      workerCallbacks.delete(id);
+    } else if (type === 'ERROR') {
+      callbacks?.reject(new Error(payload));
+      workerCallbacks.delete(id);
+    }
+  };
+  
+  aiWorker.postMessage({ type: 'INIT' });
+  return aiWorker;
+}
 
 /**
  * Initialize and load the MobileNet model
@@ -42,24 +67,26 @@ export async function loadModel() {
  * We use the internal infer method of mobilenet to get the activation from a lower layer.
  */
 export async function extractFeatures(imgElement: HTMLImageElement | HTMLCanvasElement): Promise<number[]> {
-  const loadedModel = await loadModel();
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Could not get canvas context');
   
-  // Tidy cleans up the WebGL memory used by intermediate tensors
-  const embedding = tf.tidy(() => {
-    // Get the activation from the model. 
-    // This returns a tensor of shape [1, 1024]
-    const activation = loadedModel.infer(imgElement, true);
-    return activation;
+  canvas.width = 224; // MobileNet standard size
+  canvas.height = 224;
+  ctx.drawImage(imgElement, 0, 0, 224, 224);
+  
+  const imageData = ctx.getImageData(0, 0, 224, 224);
+  const id = Math.random().toString(36).substring(7);
+  const worker = getWorker();
+  
+  return new Promise((resolve, reject) => {
+    workerCallbacks.set(id, { resolve, reject });
+    worker.postMessage({ 
+      type: 'EXTRACT_FEATURES', 
+      payload: { imageData }, 
+      id 
+    });
   });
-
-  // Convert the tensor to a standard JavaScript array
-  const featuresArray = await embedding.array() as number[][];
-  
-  // Dispose of the tensor to prevent memory leaks
-  embedding.dispose();
-
-  // The shape is [1, N], so we return the first row.
-  return featuresArray[0];
 }
 
 /**
